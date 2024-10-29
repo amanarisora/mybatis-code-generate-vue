@@ -1,9 +1,9 @@
 <template>
   <a-modal :open="props.open" title="模板编辑" @ok="()=>{console.log('ok')}"
            @cancel="()=>{emit('update:open', false)}" cancelText="取消"
-           :style="{ top: 0, padding: 0, height: '100vh', width: '80%' }">
-    <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange"
-            style="height: calc(100vh - 100px); overflow: auto;">
+           :style="{ top: '20px', padding: 0, height: '100vh', width: '80%' }">
+    <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange" :bodyStyle="{ padding: '10px 0 0 0' }"
+            style="height: calc(100vh - 150px);overflow: auto; ">
       <codemirror
           v-model="templateContent"
           :extensions="extensions"

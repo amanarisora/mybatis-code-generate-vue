@@ -6,7 +6,8 @@ import {useGlobalStore} from "@/store/globalStore";
 
 const routes = [
     { path: '/app/', component: index },
-    { path: '/app/login', component: Login}
+    { path: '/app/login', component: Login},
+    { path: '/:pathMatch(.*)*', redirect: '/app/' }
 ];
 
 export const router = createRouter({
