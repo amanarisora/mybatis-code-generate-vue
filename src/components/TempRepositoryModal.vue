@@ -2,6 +2,12 @@
   <a-modal :open="props.open" title="模板资源库" @cancel="emit('update:open',false)" style="top: 20px; padding: 0; max-height: 100vh; width: 80% ">
     <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange" :bodyStyle="{ padding: '10px 0 0 0' }"
             style="height: calc(100vh - 150px);overflow: auto; ">
+      <template #tabBarExtraContent>
+        <a-space>
+          <a-button type="primary"><UploadOutlined/>上传模板</a-button>
+          <a-button type="primary"><ReloadOutlined/></a-button>
+        </a-space>
+      </template>
 
     </a-card>
   </a-modal>
@@ -11,6 +17,7 @@ import {tabKeyToValueMap, tabList} from "@/ts/interfaces";
 import {onMounted, ref} from "vue";
 import {getTempFileList} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
+import {ReloadOutlined,UploadOutlined} from "@ant-design/icons-vue";
 
 const props = defineProps({open: Boolean});
 const emit = defineEmits(['update:open']);
