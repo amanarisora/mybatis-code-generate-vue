@@ -4,7 +4,14 @@
             style="height: calc(100vh - 150px);overflow: auto; ">
       <template #tabBarExtraContent>
         <a-space>
-          <a-button type="primary"><UploadOutlined/>上传模板</a-button>
+          <a-upload
+              v-model:file-list="fileList"
+              name="file"
+              @change="handleChange"
+          >
+            <a-button type="primary"><UploadOutlined/>上传模板</a-button>
+          </a-upload>
+
           <a-button type="primary"><ReloadOutlined/></a-button>
         </a-space>
       </template>
