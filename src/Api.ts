@@ -20,3 +20,9 @@ export const deleteDataSource = (params) => httpUtils.delete( Api.deleteDataSour
 export const login = (params) => httpUtils.get( Api.login,params);
 export const signUp = (params) => httpUtils.post( Api.signUp,params);
 export const generate = (params) => httpUtils.download( Api.generate,params);
+
+export enum TempRepApi{
+    getTempFileList = '/getTempFileList',
+}
+
+export const getTempFileList = (params) => httpUtils.get( TempRepApi.getTempFileList,params);

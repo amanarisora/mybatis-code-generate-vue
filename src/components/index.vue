@@ -66,7 +66,8 @@
           <a-col>
             <a-space>
               <a-button type="primary" @click="selectAll">全选</a-button>
-              <a-button type="primary" @click="editTemp">编辑模板</a-button>
+              <a-button type="primary" @click="()=>{openTempRep = true}">模板库</a-button>
+              <a-button type="primary" @click="()=>{openEditTemp = true}">编辑模板</a-button>
             </a-space>
           </a-col>
           <a-col>
@@ -239,6 +240,7 @@
   <AddModel v-model:open="openAdd" @reloadDataSourceList="reloadDataSourceList"></AddModel>
   <EditModel v-model:open="openEdit" :formData="editFormData" @reloadDataSourceList="reloadDataSourceList"></EditModel>
   <CodeMirrorModal v-model:open="openEditTemp"/>
+  <TempRepositoryModal v-model:open="openTempRep"/>
 </template>
 <script lang="ts" setup>
 import {h, onMounted, reactive, ref, watch} from 'vue';
@@ -253,6 +255,7 @@ import {router} from "@/router/router";
 import {message} from "ant-design-vue";
 import axios from "axios";
 import CodeMirrorModal from "@/components/CodeMirrorModal.vue";
+import TempRepositoryModal from "@/components/TempRepositoryModal.vue";
 
 const currentName = ref<string>('')
 const selectedKeys2 = ref<string[]>(['1']);
@@ -261,6 +264,8 @@ const subItems: any = ref([])
 const openAdd = ref<boolean>(false);
 const openEdit = ref<boolean>(false);
 const openEditTemp = ref<boolean>(false);
+const openTempRep = ref<boolean>(false);
+
 const editFormData = reactive<FormState>({
   id: '',
   name: '',
@@ -413,10 +418,6 @@ function selectAll() {
   } else {
     selectedRowKeys.value = tableData.value.map(t => t.key)
   }
-}
-
-function editTemp() {
-  openEditTemp.value = true
 }
 
 function search(){

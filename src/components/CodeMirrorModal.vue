@@ -25,33 +25,9 @@ import { foldGutter, foldKeymap } from '@codemirror/fold';
 import { searchKeymap, search } from '@codemirror/search';
 import {java} from '@codemirror/lang-java';
 import {ref} from "vue";
+import {tabList} from "@/ts/interfaces";
 
-const tabList = [
-  {
-    key: 'Controller',
-    tab: 'Controller',
-  },
-  {
-    key: 'Entity',
-    tab: 'Entity',
-  },
-  {
-    key: 'Mapper',
-    tab: 'Mapper',
-  },
-  {
-    key: 'Xml',
-    tab: 'Xml',
-  },
-  {
-    key: 'Service',
-    tab: 'Service',
-  },
-  {
-    key: 'ServiceImpl',
-    tab: 'ServiceImpl',
-  },
-];
+
 const key = ref('Controller')
 
 const emit = defineEmits(['update:open']);

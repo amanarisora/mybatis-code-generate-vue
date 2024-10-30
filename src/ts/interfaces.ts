@@ -54,3 +54,39 @@ export function createRowSelection(selectedRowKeys: any,selectedRow?:any,columnW
 export function isNotBlank(str: string | null | undefined): boolean {
     return str !== null && str !== undefined && str.trim() !== '';
 }
+
+export const tabList = [
+    {
+        key: 'Controller',
+        tab: 'Controller',
+    },
+    {
+        key: 'Entity',
+        tab: 'Entity',
+    },
+    {
+        key: 'Mapper',
+        tab: 'Mapper',
+    },
+    {
+        key: 'Xml',
+        tab: 'Xml',
+    },
+    {
+        key: 'Service',
+        tab: 'Service',
+    },
+    {
+        key: 'ServiceImpl',
+        tab: 'ServiceImpl',
+    },
+];
+
+export const tabKeyToValueMap = new Map<string, string>([
+    ['Controller', '1'],
+    ['Entity', '2'],
+    ['Mapper', '3'],
+    ['Xml', '4'],
+    ['Service', '5'],
+    ['ServiceImpl', '6'],
+]);
