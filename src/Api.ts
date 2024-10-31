@@ -23,6 +23,11 @@ export const generate = (params) => httpUtils.download( Api.generate,params);
 
 export enum TempRepApi{
     getTempFileList = '/getTempFileList',
+    uploadTempFile = '/uploadTempFile',
+    getFolderTree = '/getFolderTree',
 }
 
 export const getTempFileList = (params) => httpUtils.get( TempRepApi.getTempFileList,params);
+export const getFolderTree = (params) => httpUtils.get( TempRepApi.getFolderTree,params);
+
+export const uploadTempFile = (params) => httpUtils.post( TempRepApi.uploadTempFile,params);
