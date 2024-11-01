@@ -57,21 +57,22 @@
         </a-layout-sider>
         <a-layout-content
             style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto">
-          <a-list :grid="{ gutter: 16, xs: 1, sm: 2, md: 4, lg: 4, xl: 6, xxl: 3 }" :data-source="data">
+          <a-list :grid="{ gutter: 2, xs: 1, sm: 2, md: 4, lg: 4, xl: 10, xxl: 10 }" :data-source="data">
             <template #renderItem="{ item }">
               <a-list-item>
                 <a-list-item-meta>
                   <template #title>
-                    <div >
+                    <div class="file-item">
                       <a-col>
-                        <a-row>
-                          <Idea />
+                        <a-row class="icon-row">
+                          <Idea v-if="item.type == '1'"/>
+                          <FolderWithFiles v-else-if="item.type == '0'"/>
+
                         </a-row>
-                        <a-row style="text-align: center;">
-                          <span >{{ item.title }}</span>
+                        <a-row class="text-row">
+                          <span>{{ item.title }}</span>
                         </a-row>
                       </a-col>
-
                     </div>
                   </template>
                 </a-list-item-meta>
@@ -92,6 +93,8 @@ import Icon, {ReloadOutlined, UploadOutlined, ExclamationCircleOutlined, FolderO
 import {message, Modal} from "ant-design-vue";
 import FolderTree from "@/assets/folder_tree.svg"
 import Idea from "@/assets/idea.svg"
+import FolderWithFiles from "@/assets/folder_with_files.svg"
+import Folder from "@/assets/folder.svg"
 
 const props = defineProps({open: Boolean});
 const emit = defineEmits(['update:open']);
@@ -101,15 +104,20 @@ const globalStore = useGlobalStore();
 const isUploading = ref(false)
 const fileList: any = ref()
 const realFileList: any = ref([])
-
 const filePathSelectedKeys: any = ref([])
 const filePathExpandKeys: any = ref([])
 const data = ref([
   {
+    type: '0',
+    fileName: '测试',
+    id: '',
+    title: '这是一'
+  },
+  {
     type: '1',
     fileName: '测试',
     id: '',
-    title: 'aaa'
+    title: '这是一'
   }
 ])
 const filePathTree: any = ref([])
@@ -258,5 +266,39 @@ async function submitEdit(data) {
 <style scoped>
 :deep(.anticon) {
   transform: translateY(4px);
+}
+.file-item {
+  width: 140px; /* 设置合适的宽度 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.icon-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px; /* 设置图标容器的高度 */
+  margin-bottom: 8px; /* 图标和文字之间的间距 */
+}
+
+.text-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60px; /* 设置文字容器的高度 */
+}
+
+.text-row span {
+  font-size: 12px;
+  display: -webkit-box;
+  text-align: center;
+  -webkit-line-clamp: 4; /* 限制显示的行数 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word; /* 允许单词在行尾断开 */
 }
 </style>
