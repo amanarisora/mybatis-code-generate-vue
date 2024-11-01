@@ -25,9 +25,14 @@ export enum TempRepApi{
     getTempFileList = '/getTempFileList',
     uploadTempFile = '/uploadTempFile',
     getFolderTree = '/getFolderTree',
+    editFolderName = '/editFolderName',
+    deleteFolder = '/deleteFolder'
 }
 
 export const getTempFileList = (params) => httpUtils.get( TempRepApi.getTempFileList,params);
 export const getFolderTree = (params) => httpUtils.get( TempRepApi.getFolderTree,params);
 
 export const uploadTempFile = (params) => httpUtils.post( TempRepApi.uploadTempFile,params);
+export const editFolderName = (params) => httpUtils.post( TempRepApi.editFolderName,params);
+
+export const deleteFolder = (params) => httpUtils.delete( TempRepApi.deleteFolder,params);

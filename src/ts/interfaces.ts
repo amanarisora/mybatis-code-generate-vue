@@ -82,11 +82,11 @@ export const tabList = [
     },
 ];
 
-export const tabKeyToValueMap = new Map<string, string>([
-    ['Controller', '1'],
-    ['Entity', '2'],
-    ['Mapper', '3'],
-    ['Xml', '4'],
-    ['Service', '5'],
-    ['ServiceImpl', '6'],
+export const tabKeyToValueMap = new Map<string, number>([
+    ['Controller', 1],
+    ['Entity', 2],
+    ['Mapper', 3],
+    ['Xml', 4],
+    ['Service', 5],
+    ['ServiceImpl', 6],
 ]);

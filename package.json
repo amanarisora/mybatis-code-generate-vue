@@ -39,6 +39,8 @@
     "less": "^4.2.0",
     "typescript": "^5.5.3",
     "vite": "^5.4.1",
+    "vite-svg-loader": "^5.1.0",
+    "vue-svg-loader": "^0.16.0",
     "vue-tsc": "^2.0.29"
   }
 }
