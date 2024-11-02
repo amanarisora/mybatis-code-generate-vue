@@ -1,8 +1,9 @@
 import httpUtils from "./utils/axios";
 
 export enum Api {
-    getTableInfo = '/tableInfo',
+    getAllTableList = '/getAllTableList',
     getAllDataSource = '/getAllDataSource',
+    getAllDataBases = '/getAllDataBases',
     addDataSource = '/addDataSource',
     editDataSource = '/editDataSource',
     deleteDataSource = '/deleteDataSource',
@@ -11,8 +12,9 @@ export enum Api {
     signUp = '/signUp',
     generate = '/generate',
 }
-export const getTableInfo = (params) => httpUtils.get( Api.getTableInfo,params);
+export const getAllTableList = (params) => httpUtils.get( Api.getAllTableList,params);
 export const getAllDataSource = (params) => httpUtils.get( Api.getAllDataSource,params);
+export const getAllDataBases = (params) => httpUtils.get( Api.getAllDataBases,params);
 export const testDataSourceConnection = (params) => httpUtils.get( Api.testDataSourceConnection,params);
 export const addDataSource = (params) => httpUtils.post( Api.addDataSource,params);
 export const editDataSource = (params) => httpUtils.post( Api.editDataSource,params);

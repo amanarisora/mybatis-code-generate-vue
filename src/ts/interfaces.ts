@@ -1,5 +1,31 @@
 import {ref} from "vue";
 
+export const columns = [
+    {
+        title: '序号',
+        key: 'index',
+        width: '5%'
+    },
+    {
+        title: '表名',
+        dataIndex: 'TABLE_NAME',
+        key: 'TABLE_NAME',
+        width: '30%'
+    },
+    {
+        title: '备注',
+        dataIndex: 'TABLE_COMMENT',
+        key: 'TABLE_COMMENT',
+        width: '30%'
+    },
+    {
+        title: '创建时间',
+        dataIndex: 'CREATE_TIME',
+        key: 'CREATE_TIME',
+        width: '30%'
+    },
+];
+
 export interface FormState {
     id:string;
     name: string;

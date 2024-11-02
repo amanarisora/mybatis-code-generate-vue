@@ -11,7 +11,7 @@
 
     <a-layout style="height:100%;background-image: url('/main.png');background-size: cover;">
       <a-layout-sider width="250">
-        <a-menu
+<!--        <a-menu
             v-model:selectedKeys="selectedKeys2"
             v-model:openKeys="openKeys"
             mode="inline"
@@ -57,7 +57,8 @@
               <PlusCircleOutlined/>
             </a-button>
           </a-sub-menu>
-        </a-menu>
+        </a-menu>-->
+        <DatasourceTree/>
       </a-layout-sider>
       <a-layout-content
           style="padding: 0 24px 0 24px; margin: 0; min-height: 280px;position:relative;overflow: auto"
@@ -68,6 +69,7 @@
               <a-button type="primary" @click="selectAll">全选</a-button>
               <a-button type="primary" @click="()=>{openTempRep = true}">模板库</a-button>
               <a-button type="primary" @click="()=>{openEditTemp = true}">编辑模板</a-button>
+              <a-button type="primary" @click="()=>{open1 = true}">测试</a-button>
             </a-space>
           </a-col>
           <a-col>
@@ -241,21 +243,24 @@
   <EditModel v-model:open="openEdit" :formData="editFormData" @reloadDataSourceList="reloadDataSourceList"></EditModel>
   <CodeMirrorModal v-model:open="openEditTemp"/>
   <TempRepositoryModal v-model:open="openTempRep"/>
+  <AddDataSourceModal v-model:open="open1"/>
 </template>
 <script lang="ts" setup>
 import {h, onMounted, reactive, ref, watch} from 'vue';
 import {UserOutlined, ReloadOutlined, SearchOutlined} from '@ant-design/icons-vue';
-import {deleteDataSource, generate, getAllDataSource, getTableInfo} from "@/Api";
+import {deleteDataSource, generate, getAllDataSource, getAllTableList} from "@/Api";
 import AddModel from "@/components/AddModal.vue";
 import {SettingFilled, DeleteFilled, PoweroffOutlined, PlusCircleOutlined} from '@ant-design/icons-vue'
 import EditModel from "@/components/EditModal.vue";
-import {createRowSelection, FormState, generateFormData, isNotBlank, TableData} from "@/ts/interfaces";
+import {columns, createRowSelection, FormState, generateFormData, isNotBlank, TableData} from "@/ts/interfaces";
 import {useGlobalStore} from "@/store/globalStore";
 import {router} from "@/router/router";
 import {message} from "ant-design-vue";
 import axios from "axios";
 import CodeMirrorModal from "@/components/CodeMirrorModal.vue";
 import TempRepositoryModal from "@/components/TempRepositoryModal.vue";
+import DatasourceTree from "@/view/leftTree/DatasourceTree.vue";
+import AddDataSourceModal from "@/view/leftTree/AddDataSourceModal.vue";
 
 const currentName = ref<string>('')
 const selectedKeys2 = ref<string[]>(['1']);
@@ -265,6 +270,7 @@ const openAdd = ref<boolean>(false);
 const openEdit = ref<boolean>(false);
 const openEditTemp = ref<boolean>(false);
 const openTempRep = ref<boolean>(false);
+const open1 = ref<boolean>(false);
 
 const editFormData = reactive<FormState>({
   id: '',
@@ -277,32 +283,6 @@ const editFormData = reactive<FormState>({
 
 const tableData: any = ref<[]>([])
 const allTableData: any = ref<[]>([])
-
-const columns = [
-  {
-    title: '序号',
-    key: 'index',
-    width: '5%'
-  },
-  {
-    title: '表名',
-    dataIndex: 'TABLE_NAME',
-    key: 'TABLE_NAME',
-    width: '30%'
-  },
-  {
-    title: '备注',
-    dataIndex: 'TABLE_COMMENT',
-    key: 'TABLE_COMMENT',
-    width: '30%'
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'CREATE_TIME',
-    key: 'CREATE_TIME',
-    width: '30%'
-  },
-];
 
 const pagination = reactive({
   current: 1,
@@ -377,7 +357,7 @@ async function click(name: string) {
   rowSelection.value.selectedRowKeys = []
   rowSelection.value.selectedRow = []
   currentName.value = name
-  tableData.value = (await getTableInfo({user: useGlobalStore().loginUser, ds: name})).result
+  tableData.value = (await getAllTableList({user: useGlobalStore().loginUser, ds: name})).result
   tableData.value.forEach(i => {
     i.key = i.TABLE_NAME
   })
