@@ -5,7 +5,12 @@ import 'ant-design-vue/dist/reset.css';
 import antd from 'ant-design-vue'
 import '@/css/CommonCss.css'
 import {createPinia} from "pinia";
+import Terminal from 'vue-web-terminal'
 
 
-createApp(App).use(createPinia()).use(antd).use(router).mount('#app')
+
+const app = createApp(App)
+app.use(createPinia()).use(antd).use(router).use(Terminal)
+
+app.mount('#app')
 

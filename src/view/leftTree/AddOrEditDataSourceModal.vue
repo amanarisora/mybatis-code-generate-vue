@@ -4,7 +4,7 @@
     <template #footer>
       <a-button @click="cancel">取消</a-button>
       <a-button v-show="currentStep>0" @click="currentStep -= 1">上一步</a-button>
-      <a-button :disabled="datasourceType == null" type="primary" @click="submit">{{ currentStep == 0 ? '下一步' : '确定' }}</a-button>
+      <a-button :disabled="formData.datasourceType == null" type="primary" @click="submit">{{ currentStep == 0 ? '下一步' : '确定' }}</a-button>
 
     </template>
     <a-layout style="width: 100%;height: 100%">
@@ -26,10 +26,10 @@
                 <template #title>
                   <div
                       class="file-item"
-                      :style="{ backgroundColor: datasourceType == item.type ? '#b7deff' : 'white',
-                       border: datasourceType === item.type ? '1px solid #1890ff' : '0px solid #e8e8e8',
+                      :style="{ backgroundColor: formData.datasourceType == item.type ? '#b7deff' : 'white',
+                       border: formData.datasourceType === item.type ? '1px solid #1890ff' : '0px solid #e8e8e8',
                        borderRadius: '7px'}"
-                      @click="()=>{datasourceType = item.type}"
+                      @click="()=>{formData.datasourceType = item.type}"
                   >
                     <a-col>
                       <a-row class="icon-row">
@@ -51,8 +51,8 @@
             <a-row class="icon-form">
               <Vite style="transform: scale(0.6)"/>
               <div class="divider"></div> <!-- 添加分隔线 -->
-              <my-sql-on class="mysql-icon" style="transform: scale(0.6);" v-if=" datasourceType == 0"/>
-              <SqliteForm style="transform: scale(0.6);" v-else-if="datasourceType == 1"/>
+              <my-sql-on class="mysql-icon" style="transform: scale(0.6);" v-if=" formData.datasourceType == 0"/>
+              <SqliteForm style="transform: scale(0.6);" v-else-if="formData.datasourceType == 1"/>
             </a-row>
 
             <a-form v-show="currentStep==1" ref="form"
@@ -110,22 +110,32 @@
 
 <script setup lang="ts">
 import {DatasourceTypeListItems, stepItems} from "@/view/leftTree/leftTree";
-import {reactive, ref} from "vue";
+import {reactive, ref, watch} from "vue";
 import MySqlOn from "@/assets/mysql-on.svg"
 import SqliteOn from "@/assets/sqlite-on.svg"
 import SqliteForm from "@/assets/sqlite-form.svg"
 import Vite from "@/assets/vite.svg"
-import {addDataSource, testDataSourceConnection} from "@/Api";
+import {addDataSource, editDataSource, testDataSourceConnection} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {message} from "ant-design-vue";
+import {areCommonPropertiesEqual} from "@/ts/interfaces";
 
-const props = defineProps({open: Boolean});
-const emit = defineEmits(['update:open','reloadDataSourceList']);
-const datasourceType = ref(null)
+const props = defineProps({open: Boolean,isAdd:Boolean,editFormData:Object});
+const emit = defineEmits(['update:open','update:isAdd','reloadDataSourceList','editReloadDataSourceList']);
 const testLoading = ref(false)
 const form = ref()
 
 const currentStep = ref(0)
+
+
+watch(()=>props.isAdd,(value)=>{
+  if (!value){
+    Object.assign(formData, props.editFormData);
+    currentStep.value = 1
+    console.log(formData)
+    console.log(currentStep.value)
+  }
+});
 
 const initialFormData = {
   datasourceName: '',
@@ -133,6 +143,7 @@ const initialFormData = {
   port: '',
   username: '',
   password: '',
+  datasourceType: null
 }
 const formData = reactive({...initialFormData})
 
@@ -140,7 +151,7 @@ function testConnection() {
   form.value.validate()
       .then(async () => {
         testLoading.value = true
-        var data:any = await testDataSourceConnection({...formData,datasourceType:datasourceType.value});
+        var data:any = await testDataSourceConnection({...formData});
         testLoading.value = false
         if (data.result){
           message.info("连接成功")
@@ -157,26 +168,40 @@ function testConnection() {
 
 async function submit() {
   if (currentStep.value == 0) {
-    if(datasourceType.value != null){
+    if(formData.datasourceType != null){
       currentStep.value += 1
     }
     return
   }
-  const data:any = await addDataSource({
-    ...formData,datasourceType:datasourceType.value,user:useGlobalStore().loginUser
-  })
-  if (data.code ==200){
-    message.success("新增数据源成功")
+  if (props.isAdd){
+    const data:any = await addDataSource({
+      ...formData,user:useGlobalStore().loginUser
+    })
+    if (data.code ==200){
+      message.success("新增数据源成功")
+    }
+    emit("reloadDataSourceList")
+  }else {
+    if (!areCommonPropertiesEqual(props.editFormData,formData)){
+      const data:any = await editDataSource({
+        ...formData,oldName:props.editFormData?.datasourceName,user:useGlobalStore().loginUser
+      })
+      if (data.code ==200){
+        message.success("编辑数据源成功")
+      }
+      emit("editReloadDataSourceList",props.editFormData?.datasourceName)
+    }
   }
-  emit("reloadDataSourceList")
+  emit('update:isAdd',true)
   emit('update:open',false)
 
 }
 
 function cancel(){
   currentStep.value = 0
-  datasourceType.value = null
+  formData.datasourceType = null
   Object.assign(formData, initialFormData);
+  emit('update:isAdd',true)
   emit('update:open',false)
 
 }
@@ -219,10 +244,4 @@ function cancel(){
   align-items: center;
 }
 
-.divider {
-  flex-grow: 1; /* 使线条占据可用空间 */
-  height: 3px; /* 设置线的高度 */
-  background-color: gray;
-  margin: 0 10px; /* 设置线与图标之间的间距 */
-}
 </style>

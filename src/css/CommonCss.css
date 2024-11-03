@@ -4,3 +4,9 @@
 .mysql-icon-small{
     border-radius: 20%
 }
+.divider {
+    flex-grow: 1; /* 使线条占据可用空间 */
+    height: 3px; /* 设置线的高度 */
+    background-color: gray;
+    margin: 0 10px; /* 设置线与图标之间的间距 */
+}

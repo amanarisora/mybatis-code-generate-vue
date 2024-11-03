@@ -10,59 +10,15 @@
     </a-layout-header>
 
     <a-layout style="height:100%;background-image: url('/main.png');background-size: cover;">
-      <a-layout-sider width="250">
-<!--        <a-menu
-            v-model:selectedKeys="selectedKeys2"
-            v-model:openKeys="openKeys"
-            mode="inline"
-            style="border-right: 0;"
-        >
-          <a-sub-menu key="sub1">
-            <template #title>
-        <span>
-          <span>
-            <user-outlined/>
-                数据源
-          </span>
-        </span>
-            </template>
-            <a-menu-item v-for="item in subItems" :key="item.name" @click="click(item.name)">
-              <a-row>
-                <a-col flex="auto" style="padding-right: 10px;">
-                  {{ item.name }}
-                </a-col>
-                <a-col flex="none">
-                  <a-button
-                      size="small" shape="circle" :icon="h(SettingFilled)" @click="edit(item.name)" @click.stop
-                      style="position: absolute; right: 30px; top: 50%; transform: translateY(-50%);"
-                  />
-                </a-col>
-                <a-col flex="none">
-                  <a-popconfirm
-                      ok-text="是"
-                      cancel-text="否"
-                      :icon="h(DeleteFilled)"
-                      title="是否删除数据源？"
-                      @confirm="remove(item.name)"
-                  >
-                    <a-button
-                        size="small" shape="circle" :icon="h(DeleteFilled)" @click.stop
-                        style="position: absolute; right: 0px; top: 50%; transform: translateY(-50%);"
-                    />
-                  </a-popconfirm>
-                </a-col>
-              </a-row>
-            </a-menu-item>
-            <a-button type="text" @click="add" size="large" shape="circle" style="left: 74%;top: 100%">
-              <PlusCircleOutlined/>
-            </a-button>
-          </a-sub-menu>
-        </a-menu>-->
+      <a-layout-sider :width="siderWidth" style="height: 100%;overflow: auto;overflow-x: hidden">
         <DatasourceTree/>
+        <div class="resizer" @mousedown="startResize"></div>
       </a-layout-sider>
+
       <a-layout-content
           style="padding: 0 24px 0 24px; margin: 0; min-height: 280px;position:relative;overflow: auto"
       >
+
         <a-row style="margin: 15px 0 15px 0;" type="flex" justify="space-between">
           <a-col>
             <a-space>
@@ -243,10 +199,10 @@
   <EditModel v-model:open="openEdit" :formData="editFormData" @reloadDataSourceList="reloadDataSourceList"></EditModel>
   <CodeMirrorModal v-model:open="openEditTemp"/>
   <TempRepositoryModal v-model:open="openTempRep"/>
-  <AddDataSourceModal v-model:open="open1"/>
+  <MySqlTerminalModal v-model:open="open1"/>
 </template>
 <script lang="ts" setup>
-import {h, onMounted, reactive, ref, watch} from 'vue';
+import {defineAsyncComponent, h, onMounted, reactive, ref, watch} from 'vue';
 import {UserOutlined, ReloadOutlined, SearchOutlined} from '@ant-design/icons-vue';
 import {deleteDataSource, generate, getAllDataSource, getAllTableList} from "@/Api";
 import AddModel from "@/components/AddModal.vue";
@@ -256,21 +212,51 @@ import {columns, createRowSelection, FormState, generateFormData, isNotBlank, Ta
 import {useGlobalStore} from "@/store/globalStore";
 import {router} from "@/router/router";
 import {message} from "ant-design-vue";
-import axios from "axios";
 import CodeMirrorModal from "@/components/CodeMirrorModal.vue";
 import TempRepositoryModal from "@/components/TempRepositoryModal.vue";
 import DatasourceTree from "@/view/leftTree/DatasourceTree.vue";
-import AddDataSourceModal from "@/view/leftTree/AddDataSourceModal.vue";
+import throttle from 'lodash/throttle';
+import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
 
 const currentName = ref<string>('')
-const selectedKeys2 = ref<string[]>(['1']);
-const openKeys = ref<string[]>(['sub1']);
 const subItems: any = ref([])
 const openAdd = ref<boolean>(false);
 const openEdit = ref<boolean>(false);
 const openEditTemp = ref<boolean>(false);
 const openTempRep = ref<boolean>(false);
-const open1 = ref<boolean>(false);
+const globalStore =  useGlobalStore()
+const open1 = ref(false)
+
+onMounted(async () => {
+  await reloadDataSourceList()
+})
+
+const siderWidth = ref(300); // 初始宽度
+
+function startResize(event) {
+  const startX = event.clientX;
+  const startWidth = siderWidth.value;
+
+  // 禁用选择
+  document.body.style.userSelect = 'none';
+  const onMouseMove = throttle((e) => {
+    const newWidth = startWidth + (e.clientX - startX);
+    siderWidth.value = Math.min(Math.max(250, newWidth), 500); // 设置最小宽度为200px，最大宽度为400px
+    globalStore.indexWidth = siderWidth.value
+  }, 80); // 每16ms执行一次，约等于60fps
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    // 恢复选择
+    document.body.style.userSelect = '';
+  }
+
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
+
+
 
 const editFormData = reactive<FormState>({
   id: '',
@@ -337,9 +323,7 @@ const generateForm = reactive<generateFormData>({
   needSpringDoc: true,
 })
 
-onMounted(async () => {
-  await reloadDataSourceList()
-})
+
 
 watch(() => generateForm.needSwagger, (value) => {
   if (generateForm.needSpringDoc && value) {
@@ -479,6 +463,17 @@ function logOut() {
 
 .bold-text {
   font-weight: bold;
+}
+
+.resizer {
+  width: 5px;
+  cursor: ew-resize;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.1);
+  z-index: 10; /* 确保 resizer 在滚动条之上 */
 }
 
 :deep(.ant-menu-item) {
