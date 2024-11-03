@@ -33,8 +33,8 @@
             <a-menu @click="({ key: menuKey }) => dropdown(data,key, menuKey,title,type)">
               <a-menu-item key="open" v-if="children.length ==0" >打开</a-menu-item>
               <a-menu-item key="close" v-if="type != 2&&children.length >0">关闭连接</a-menu-item>
-              <a-menu-item key="addDatasource" v-if="type != 2">新建连接</a-menu-item>
-              <a-menu-item key="editDatasource" v-if="type != 2">编辑连接</a-menu-item>
+              <a-menu-item key="addDatasource" v-if="type == 0">新建连接</a-menu-item>
+              <a-menu-item key="editDatasource" v-if="type == 0">编辑连接</a-menu-item>
               <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库</a-menu-item>
               <a-menu-item key="openTerminal" >打开命令行</a-menu-item>
               <a-menu-item key="rename" v-if="type != 1">重命名</a-menu-item>
@@ -45,6 +45,8 @@
         </a-dropdown>
       </template>
     </a-tree>
+
+    <a-button @click="emit('test')">点我</a-button>
 
     <a-button type="text" @click="()=>{openAddDatasource = true}" size="large" shape="circle"
               style="margin-left: 80%">
@@ -106,6 +108,8 @@ let treeDataMap = new Map()
 const editTitle = ref('')
 const editInput = ref()
 const editingKey = ref<string | null>(null);
+
+const emit = defineEmits(["test"])
 
 let clickTimeout: number | null = null;
 function selectTree(keys, e) {
