@@ -37,15 +37,20 @@ const rowSelection = ref({
 const pagination = reactive({
   current: 1,
 
-  pageSize: 10,
+  pageSize: 20,
   showTotal: total => `共 ${total} 条`,
   total: 0,
   onChange: onPageChange,
   onShowSizeChange: sizeChange
 })
 
-function onPageChange(page) {
+async function onPageChange(page) {
   pagination.current = page
+  const data:any = await queryTableDateByPage({databaseName: props.databaseName, tableName: props.tableName,
+    pageNo:pagination.current,pageSize:pagination.pageSize,
+    user:useGlobalStore().loginUser,ds:props.datasourceName})
+  tableData.value = data.result.records
+  pagination.total = data.result.total
 }
 
 function sizeChange(current, size) {
@@ -73,6 +78,7 @@ onMounted(async ()=>{
   data = await queryTableDateByPage({databaseName: props.databaseName, tableName: props.tableName,
     user:useGlobalStore().loginUser,ds:props.datasourceName})
   tableData.value = data.result.records
+  pagination.total = data.result.total
 })
 
 
