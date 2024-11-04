@@ -78,11 +78,9 @@ function sizeChange(current, size) {
 
 
 watch(()=>showObjStore.isTableObjDataChanged,()=>{
+  pagination.current = 1
   tableData.value = showObjStore.tableObjData.get(showObjStore.currentSelectedDatabase)
-  console.log("触发")
-  console.log(showObjStore.tableObjData)
-  console.log(showObjStore.currentSelectedDatabase)
-  console.log(tableData.value)
+
 })
 
 function handleResizeColumn(w, col) {

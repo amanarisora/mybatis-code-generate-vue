@@ -19,7 +19,7 @@
 
       <a-layout-content style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;overflow: auto">
 
-        <a-tabs v-model:activeKey="activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}">
+        <a-tabs v-model:activeKey="activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}" @edit="onEdit">
           <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%">
             <component :is="pane.component" v-bind="pane.props" style="height: 100%;"/>
           </a-tab-pane>
@@ -55,6 +55,25 @@ const panes = ref<{ title: string; key: string; component:any; closable?: boolea
   { title: 'Tab 1', key: '1',component:markRaw(CodeGenerate) },
 ]);
 const activeKey = ref(panes.value[0].key)
+
+function onEdit(targetKey: string | MouseEvent, action: string){
+  if (action !== 'add') {
+    let lastIndex = 0;
+    panes.value.forEach((pane, i) => {
+      if (pane.key === targetKey) {
+        lastIndex = i - 1;
+      }
+    });
+    panes.value = panes.value.filter(pane => pane.key !== targetKey);
+    if (panes.value.length && activeKey.value === targetKey) {
+      if (lastIndex >= 0) {
+        activeKey.value = panes.value[lastIndex].key;
+      } else {
+        activeKey.value = panes.value[0].key;
+      }
+    }
+  }
+}
 
 function openTerminal(terminalTab:string){
   panes.value.push({title: terminalTab, key: terminalTab,component:markRaw(MySqlTerminalModal)})
