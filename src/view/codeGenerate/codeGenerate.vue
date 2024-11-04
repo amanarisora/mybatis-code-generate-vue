@@ -274,7 +274,7 @@ async function click(name: string) {
   rowSelection.value.selectedRow = []
   currentName.value = name
   const data:any = await getAllTableList({user: useGlobalStore().loginUser, ds: name})
-  tableData.value = data.result
+  tableData.value = data.result.tableTree
   tableData.value.forEach(i => {
     i.key = i.TABLE_NAME
   })
@@ -359,5 +359,14 @@ async function reloadDataSourceList() {
 
 .bold-text {
   font-weight: bold;
+}
+
+:deep(.ant-table-thead) > tr > th {
+  background-color: #e3eff9 !important; /* 青色 */
+}
+
+/* 设置单数行的背景颜色 */
+:deep(.ant-table-tbody) > tr:nth-child(odd) {
+  background-color: #f8f9fb !important; /* 青色 */
 }
 </style>

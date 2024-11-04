@@ -12,16 +12,16 @@
     <a-layout style="height:100%;background-image: url('/main.png');background-size: cover;">
       <a-layout-sider :width="siderWidth" style="height: 100%;overflow: auto;overflow-x: hidden">
 
-        <DatasourceTree @test="test"/>
+        <DatasourceTree @openTerminal="openTerminal" @openTableData="openTableData"/>
         <div class="resizer" @mousedown="startResize"></div>
 
       </a-layout-sider>
 
       <a-layout-content style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;overflow: auto">
 
-        <a-tabs v-model:activeKey="activeKey" hide-add type="editable-card" style="height: 100%">
+        <a-tabs v-model:activeKey="activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}">
           <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%">
-            <component :is="pane.component" />
+            <component :is="pane.component" v-bind="pane.props" style="height: 100%;"/>
           </a-tab-pane>
         </a-tabs>
 
@@ -39,6 +39,8 @@ import DatasourceTree from "@/view/leftTree/DatasourceTree.vue";
 import throttle from 'lodash/throttle';
 import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
 import CodeGenerate from "@/view/codeGenerate/codeGenerate.vue";
+import TableData from "@/view/table/TableData.vue";
+import ShowObject from "@/view/common/ShowObject.vue";
 
 
 const globalStore =  useGlobalStore()
@@ -48,14 +50,24 @@ onMounted(async () => {
 
 })
 
-const panes = ref<{ title: string; key: string; component:any; closable?: boolean }[]>([
+const panes = ref<{ title: string; key: string; component:any; closable?: boolean; props?:object}[]>([
+  { title: '对象', key: 'ShowObjectKey',component:markRaw(ShowObject),closable:false },
   { title: 'Tab 1', key: '1',component:markRaw(CodeGenerate) },
 ]);
 const activeKey = ref(panes.value[0].key)
 
-function test(){
-  panes.value.push({title: 'Tab 2', key: '2',component:markRaw(MySqlTerminalModal)})
-  activeKey.value = '2'
+function openTerminal(terminalTab:string){
+  panes.value.push({title: terminalTab, key: terminalTab,component:markRaw(MySqlTerminalModal)})
+  activeKey.value = terminalTab
+}
+
+function openTableData(datasourceName:string,databaseName:string,tableName:string){
+  const key = tableName+' - '+databaseName
+  if(!panes.value.some(obj => obj.key === key)){
+    panes.value.push({title: key, key: key,component:markRaw(TableData),
+      props:{datasourceName:datasourceName,databaseName:databaseName,tableName:tableName}})
+  }
+  activeKey.value = key
 }
 
 //region 拖拽改变宽度
@@ -113,15 +125,6 @@ function logOut() {
 
 :deep(.ant-menu-submenu-title) {
   padding-left: 10px !important; /* 自定义 padding-left */
-}
-
-:deep(.ant-table-thead) > tr > th {
-  background-color: #e3eff9 !important; /* 青色 */
-}
-
-/* 设置单数行的背景颜色 */
-:deep(.ant-table-tbody) > tr:nth-child(odd) {
-  background-color: #f8f9fb !important; /* 青色 */
 }
 
 :deep(.ant-tabs-content) {

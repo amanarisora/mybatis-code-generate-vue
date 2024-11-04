@@ -36,9 +36,8 @@
               <a-menu-item key="close" v-if="type != 2&&children.length >0">关闭连接</a-menu-item>
               <a-menu-item key="addDatasource" v-if="type == 0">新建连接</a-menu-item>
               <a-menu-item key="editDatasource" v-if="type == 0">编辑连接</a-menu-item>
-              <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库
-              </a-menu-item>
-              <a-menu-item key="openTerminal" v-if="type != 0 || children.length >0">打开命令行</a-menu-item>
+              <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库</a-menu-item>
+              <a-menu-item key="openTerminal" v-if="type != 2 &&(type != 0 || children.length >0)">打开命令行</a-menu-item>
               <a-menu-item key="rename" v-if="type != 1">重命名</a-menu-item>
               <a-menu-item key="delete" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">
                 删除
@@ -84,6 +83,7 @@ import {message, Modal} from "ant-design-vue";
 import CreateDatabaseModal from "@/view/leftTree/CreateDatabaseModal.vue";
 import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
 import throttle from 'lodash/throttle';
+import {useShowObjStore} from "@/store/showObjStore";
 
 
 onMounted(async () => {
@@ -114,7 +114,8 @@ const editTitle = ref('')
 const editInput = ref()
 const editingKey = ref<string | null>(null);
 
-const emit = defineEmits(["test"])
+const showObjStore = useShowObjStore()
+const emit = defineEmits(["openTerminal","openTableData"])
 
 let clickTimeout: number | null = null;
 
@@ -122,10 +123,11 @@ function selectTree(keys, e) {
   if (clickTimeout) {
     clearTimeout(clickTimeout);
   }
-  console.log(e)
   datasourceSelectedKeys.value = [e.node.key]
   switch (e.node.type) {
     case 0:
+      showObjStore.currentSelectedDatabase = ''
+      showObjStore.isTableObjDataChanged += 1
       /*if (e.node.children.length == 0) {
         clickTimeout = window.setTimeout(async () => {
           console.log('单击触发')
@@ -136,6 +138,8 @@ function selectTree(keys, e) {
 
       break
     case 1:
+      showObjStore.currentSelectedDatabase = e.node.title
+      showObjStore.isTableObjDataChanged += 1
       /*if (e.node.children.length == 0) {
         clickTimeout = window.setTimeout(async () => {
           console.log('单击触发')
@@ -144,8 +148,10 @@ function selectTree(keys, e) {
         }, 300);
       }*/
       break
+    case 2:
+      showObjStore.currentSelectedDatabase = e.node.parentId
+      break
   }
-
 }
 
 async function handleDoubleClick(e, node) {
@@ -153,7 +159,6 @@ async function handleDoubleClick(e, node) {
     clearTimeout(clickTimeout);
   }
   console.log("双击")
-  console.log(node)
   switch (node.type) {
     case 0:
       if (node.children.length == 0) {
@@ -165,6 +170,8 @@ async function handleDoubleClick(e, node) {
         await reloadTableList(node.parentId, node.title)
       }
       break
+    case 2:
+      emit("openTableData",node.datasourceName,node.parentId, node.title)
   }
   if (!datasourceExpandKeys.value.includes(node.key)) {
     datasourceExpandKeys.value.push(node.key)
@@ -197,6 +204,12 @@ async function reloadDatabase(datasourceName: string) {
   const data: any = await getAllDataBases({user: useGlobalStore().loginUser, ds: datasourceName})
   if (data.code == 200) {
     const dataObject = treeDataMap.get(datasourceName)
+    data.result.forEach(item=>{
+      const databaseItem = dataObject.childMap.get(item.title)
+      if (databaseItem) {
+        item.children = databaseItem.children
+      }
+    })
     dataObject.data.children = data.result
 
     let tempChildMap = new Map()
@@ -214,7 +227,9 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
     databaseName: databaseName
   })
   if (data.code == 200) {
-    setDatabaseChildren(datasourceName, databaseName, data.result)
+    setDatabaseChildren(datasourceName, databaseName, data.result.tableTree)
+    showObjStore.tableObjData.set(databaseName,data.result.tableColumn)
+    showObjStore.isTableObjDataChanged += 1
   }
 }
 
@@ -261,7 +276,12 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
       }
       break
     case 'openTerminal':
-      emit('test')
+      if (type == 0) {
+        emit('openTerminal',title+' - 命令行')
+      } else if (type == 1) {
+        emit('openTerminal',data.parentId+' - 命令行')
+      }
+
       break
     case 'delete':
       if (type == 0) {
@@ -274,7 +294,7 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
           ]),
           icon: h(ExclamationCircleOutlined),
           content: h('div', [
-            '删除数据库将会删除其下所有数据且',
+            '删除数据库将会删除其下',h('span', {style: {color: 'red', fontWeight: 'bold'}}, '所有数据'),'且',
             h('span', {style: {color: 'red', fontWeight: 'bold'}}, '后果不可逆'),
             '，是否继续?'
           ]),
