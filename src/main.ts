@@ -7,10 +7,13 @@ import '@/css/CommonCss.css'
 import {createPinia} from "pinia";
 import Terminal from 'vue-web-terminal'
 
+import { Splitpanes, Pane } from 'splitpanes'
+import 'splitpanes/dist/splitpanes.css'
+
 
 
 const app = createApp(App)
-app.use(createPinia()).use(antd).use(router).use(Terminal)
+app.use(createPinia()).use(antd).use(router).use(Terminal).component('Splitpanes', Splitpanes).component('Pane', Pane)
 
 app.mount('#app')
 

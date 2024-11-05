@@ -66,7 +66,6 @@ const props = defineProps({
 })
 
 onMounted(async ()=>{
-  await test({user:useGlobalStore().loginUser,ds:props.datasourceName})
   const table = document.querySelector('.ant-tabs-content-holder')
   if(table){
     const parentHeight = table.parentElement?.clientHeight;

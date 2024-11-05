@@ -79,7 +79,9 @@ function sizeChange(current, size) {
 
 watch(()=>showObjStore.isTableObjDataChanged,()=>{
   pagination.current = 1
-  tableData.value = showObjStore.tableObjData.get(showObjStore.currentSelectedDatabase)
+  if (showObjStore.tableObjData.has(showObjStore.currentSelectedDatasource)){
+    tableData.value = showObjStore.tableObjData.get(showObjStore.currentSelectedDatasource).get(showObjStore.currentSelectedDatabase)
+  }
 
 })
 
