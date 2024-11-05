@@ -16,7 +16,8 @@
             <MysqlOffSmall v-else-if="type==0&&children.length==0" class="mysql-icon-small" style="float: left;"/>
             <DatabaseOnSmall v-else-if="type==1&&children.length>0" class="mysql-icon-small" style="float: left;"/>
             <DatabaseOffSmall v-else-if="type==1&&children.length==0" class="mysql-icon-small" style="float: left;"/>
-            <TableSmall v-else-if="type==2" class="mysql-icon-small" style="float: left;"/>
+            <TableSmall v-else-if="type==2 || type ==3" class="mysql-icon-small" style="float: left;"/>
+            <QuerySmall v-else-if="type==4" class="mysql-icon-small" style="float: left;"/>
             <a-tooltip v-if="type==2" placement="right">
               <template #title>
                 <span>{{ title }}</span>
@@ -32,14 +33,14 @@
           </div>
           <template #overlay>
             <a-menu @click="({ key: menuKey }) => handleMenuClick(data,key, menuKey,title,type)">
-              <a-menu-item key="open" v-if="children.length ==0">打开</a-menu-item>
-              <a-menu-item key="close" v-if="type != 2&&children.length >0">关闭连接</a-menu-item>
+              <a-menu-item key="open" v-if="children.length ==0 && (type !=3 &&type!=4)">打开</a-menu-item>
+              <a-menu-item key="close" v-if="type != 2&&children.length >0 &&(type !=3 &&type!=4)">关闭连接</a-menu-item>
               <a-menu-item key="addDatasource" v-if="type == 0">新建连接</a-menu-item>
               <a-menu-item key="editDatasource" v-if="type == 0">编辑连接</a-menu-item>
               <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库</a-menu-item>
               <a-menu-item key="openTerminal" v-if="type != 2 &&(type != 0 || children.length >0)">打开命令行</a-menu-item>
-              <a-menu-item key="rename" v-if="type != 1">重命名</a-menu-item>
-              <a-menu-item key="delete" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">
+              <a-menu-item key="rename" v-if="type == 2 || type == 0">重命名</a-menu-item>
+              <a-menu-item key="delete" v-if="type !=3 && type !=4" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">
                 删除
               </a-menu-item>
               <a-menu-item key="reload" v-if="children.length >0">刷新</a-menu-item>
@@ -79,11 +80,14 @@ import MysqlOnSmall from '@/assets/mysql-on-small.svg'
 import DatabaseOffSmall from '@/assets/database-off-small.svg'
 import DatabaseOnSmall from '@/assets/database-on-small.svg'
 import TableSmall from '@/assets/table-small.svg'
+import QuerySmall from "@/assets/query-small.svg"
 import {message, Modal} from "ant-design-vue";
 import CreateDatabaseModal from "@/view/leftTree/CreateDatabaseModal.vue";
 import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
+
 import throttle from 'lodash/throttle';
 import {useShowObjStore} from "@/store/showObjStore";
+import {generateUUID} from "@/ts/interfaces";
 
 
 onMounted(async () => {
@@ -163,11 +167,20 @@ async function handleDoubleClick(e, node) {
     case 0:
       if (node.children.length == 0) {
         await reloadDatabase(node.datasourceName)
+        if (!datasourceExpandKeys.value.includes(node.key)) {
+          datasourceExpandKeys.value.push(node.key)
+        }
+        return
       }
+
       break
     case 1:
       if (node.children.length == 0) {
         await reloadTableList(node.parentId, node.title)
+        if (!datasourceExpandKeys.value.includes(node.key)) {
+          datasourceExpandKeys.value.push(node.key)
+        }
+        return
       }
       break
     case 2:
@@ -225,11 +238,46 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
     user: useGlobalStore().loginUser,
     ds: datasourceName,
     databaseName: databaseName
-  })
-  if (data.code == 200) {
-    setDatabaseChildren(datasourceName, databaseName, data.result.tableTree)
-    showObjStore.tableObjData.set(databaseName,data.result.tableColumn)
-    showObjStore.isTableObjDataChanged += 1
+  });
+
+  if (data.code === 200) {
+    const item = getDatabaseObj(datasourceName, databaseName)
+    item.children = []
+    const table:any = {
+      key: generateUUID(),
+      title: '表',
+      type:'3',
+      parentId:databaseName,
+      datasourceName:datasourceName,
+      children: []
+    }
+    const query:any = {
+      key: generateUUID(),
+      title: '查询',
+      type:'4',
+      parentId:databaseName,
+      datasourceName:datasourceName,
+      children: []
+    }
+    item.children.push(table)
+    item.children.push(query)
+    const tableTree = data.result.tableTree;
+    const tableColumn = data.result.tableColumn;
+    const batchSize = 20; // 每批加载的表数量
+
+    // 分批加载 tableTree
+    for (let i = 0; i < tableTree.length; i += batchSize) {
+      const batch = tableTree.slice(i, i + batchSize);
+      // setDatabaseChildren(datasourceName, databaseName, batch);
+      table.children.push(...batch)
+      datasourceTreeData.value.push({})
+      datasourceTreeData.value.pop()
+      await new Promise((resolve) => setTimeout(resolve, 20)); // 延迟100毫秒
+    }
+
+    // 更新 tableColumn 和其他状态
+    showObjStore.tableObjData.set(databaseName, tableColumn);
+    showObjStore.isTableObjDataChanged += 1;
   }
 }
 

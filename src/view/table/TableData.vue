@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from "vue";
-import {getTableColumnVueList, queryTableDateByPage} from "@/view/table/tableAboutApi";
+import {getTableColumnVueList, queryTableDateByPage, test} from "@/view/table/tableAboutApi";
 import {useGlobalStore} from "@/store/globalStore";
 
 //region 表基础相关
@@ -47,7 +47,6 @@ const pagination = reactive({
 async function onPageChange(page) {
   pagination.current = page
   const data:any = await queryTableDateByPage({databaseName: props.databaseName, tableName: props.tableName,
-    pageNo:pagination.current,pageSize:pagination.pageSize,
     user:useGlobalStore().loginUser,ds:props.datasourceName})
   tableData.value = data.result.records
   pagination.total = data.result.total
@@ -67,6 +66,7 @@ const props = defineProps({
 })
 
 onMounted(async ()=>{
+  await test({user:useGlobalStore().loginUser,ds:props.datasourceName})
   const table = document.querySelector('.ant-tabs-content-holder')
   if(table){
     const parentHeight = table.parentElement?.clientHeight;
