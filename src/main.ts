@@ -13,7 +13,7 @@ import 'splitpanes/dist/splitpanes.css'
 
 
 const app = createApp(App)
-app.use(createPinia()).use(antd).use(router).use(Terminal).component('Splitpanes', Splitpanes).component('Pane', Pane)
+app.use(createPinia()).use(antd).use(router).use(Terminal).component('SplitPanes', Splitpanes).component('Pane', Pane)
 
 app.mount('#app')
 

@@ -1,16 +1,24 @@
 <template>
   <div style="height: 100%">
     <a-space style="padding: 5px 0 5px 0">
-      <a-select
-          v-model:value="datasourceName"
-          style="width: 120px"
-          :options="datasourceData"
-      ></a-select>
-      <a-select
-          v-model:value="databaseName"
-          style="width: 120px"
-          :options="databaseData"
-      ></a-select>
+
+      <customSelect v-model:value="datasourceName" :options="datasourceData">
+        <template #prefixIcon>
+          <MysqlOnSmall class="mysql-icon-small" />
+        </template>
+        <template #itemIcon>
+          <MysqlOnSmall class="mysql-icon-small" />
+        </template>
+      </customSelect>
+      <customSelect v-model:value="databaseName" :options="databaseData">
+        <template #prefixIcon>
+          <DatabaseOnSmall class="mysql-icon-small"/>
+        </template>
+        <template #itemIcon>
+          <DatabaseOnSmall class="mysql-icon-small"/>
+        </template>
+      </customSelect>
+
       <a-button class="green" @click="console.log(templateContent)">
         <SaveOutlined/>
         保存
@@ -20,45 +28,83 @@
         运行
       </a-button>
     </a-space>
-    <splitpanes horizontal style="height: calc(100% - 42px)">
-      <pane :min-size="10" style="overflow: auto;">
+    <SplitPanes horizontal style="height: calc(100% - 42px)">
+      <Pane :min-size="10" style="overflow: auto;">
         <codemirror
             style="height: 100%"
             v-model="templateContent"
-            :extensions="extensions"
+            :extensions="computedExtensions"
             class="codemirror-container"
         />
-      </pane>
-      <pane :min-size="10">
-        <codemirror
+      </Pane>
+      <pane :min-size="10" style="overflow: auto;">
+        <codemirror style="height: 100%"
             v-model="templateContent"
             :extensions="extensions"
             class="codemirror-container"
         />
       </pane>
-    </splitpanes>
+    </SplitPanes>
 
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {PlayCircleOutlined, SaveOutlined} from "@ant-design/icons-vue";
 import {Codemirror} from "vue-codemirror";
 import {basicSetup} from "codemirror";
 import {search} from "@codemirror/search";
-import {autocompletion, CompletionContext} from "@codemirror/autocomplete";
+import {acceptCompletion, autocompletion, CompletionContext, completionKeymap} from "@codemirror/autocomplete";
 import {oneDark} from "@codemirror/theme-one-dark";
-import {EditorView} from "@codemirror/view";
-import { sql } from '@codemirror/lang-sql';
+import {EditorView, keymap} from "@codemirror/view";
+import {defaultKeymap} from '@codemirror/commands';
+import {sql} from '@codemirror/lang-sql';
+import {useShowObjStore} from "@/store/showObjStore";
+import MysqlOnSmall from "@/assets/mysql-on-small.svg";
+import customSelect from "@/view/common/customSelect.vue";
+import DatabaseOnSmall from '@/assets/database-on-small.svg'
+import {BasicAutoCompletion} from "@/view/table/query";
 
-const datasourceName = ref('')
-const databaseName = ref('')
-const datasourceData = ref([])
-const databaseData = ref([])
+const showObjStore = useShowObjStore()
+
+const isNewQuery = false
+const datasourceName: any = ref('')
+const databaseName: any = ref('')
+const datasourceData: any = ref([])
+const databaseData: any = ref([])
 
 const templateContent = ref('import from');
-const customCompletion = autocompletion({
+
+const props = defineProps({
+  datasourceName: String,
+  databaseName: String
+})
+const options:any = ref([])
+onMounted(() => {
+  showObjStore.treeDataMap.forEach((value, key) => {
+    options.value.push({ label: key, type: 'text' })
+    datasourceData.value.push({
+      value: key,
+      label: key
+    });
+  });
+  const childMap = showObjStore.treeDataMap.get(props.datasourceName)?.childMap;
+  if (childMap) {
+    childMap.forEach((value, key) => {
+      options.value.push({ label: key, type: 'text' })
+      databaseData.value.push({
+        value: key,
+        label: key
+      });
+    });
+  }
+  databaseName.value = props.databaseName;
+  datasourceName.value = props.datasourceName;
+});
+
+
+let customCompletion = autocompletion({
   override: [
     (context: CompletionContext) => {
       let word = context.matchBefore(/\w*/);
@@ -66,28 +112,52 @@ const customCompletion = autocompletion({
       if (context.explicit || word) {
         return {
           from: word.from,
-          options: [
-            {label: "hello", type: "variable", info: "(World)"},
-            {label: "magic", type: "text", apply: "⠁⭒*.✩.*⭒⠁", detail: "macro"},
-            { label: 'SELECT', type: 'function' },
-            { label: 'my_custom_variable', type: 'variable' },
-            { label: 'my_custom_keyword', type: 'keyword' },
-            // 添加更多的提示词
-            { label: 'additional_keyword1', type: 'keyword' },
-            { label: 'additional_keyword2', type: 'keyword' },
-            { label: 'additional_function', type: 'function' }
-          ]
+          options: BasicAutoCompletion
         };
       }
       return null;
     }
   ]
 });
+
+const computedExtensions = computed(() => {
+  return [
+    basicSetup,
+    search({top: true}),
+    autocompletion({
+      override: [
+        (context: CompletionContext) => {
+          let word = context.matchBefore(/\w*/);
+          if (!word || word.from == word.to) return null;
+          if (context.explicit || word) {
+            return {
+              from: word.from,
+              options: [...options.value,...BasicAutoCompletion]
+            };
+          }
+          return null;
+        }
+      ]
+    }),
+    sql(),
+    oneDark,
+    EditorView.theme({
+      '&': {
+        fontSize: '20px', // 修改字体大小
+        fontFamily: 'Microsoft YaHei',
+      },
+    }),
+    keymap.of([
+      ...defaultKeymap.filter(key => key.key !== 'Tab'), // 移除默认的 Tab 行为
+      ...completionKeymap, // 添加自动补全的快捷键
+      {key: 'Tab', run: acceptCompletion}, // 将 Tab 键绑定到自动补全
+    ]),
+  ];
+});
+
 const extensions = [
-  // foldGutter(),
   basicSetup,
   search({top: true}),
-  // autocompletion({ override: [customCompletions] }),
   customCompletion,
   sql(),
   oneDark,
@@ -97,6 +167,11 @@ const extensions = [
       fontFamily: 'Microsoft YaHei',
     },
   }),
+  keymap.of([
+    ...defaultKeymap.filter(key => key.key !== 'Tab'), // 移除默认的 Tab 行为
+    ...completionKeymap, // 添加自动补全的快捷键
+    {key: 'Tab', run: acceptCompletion}, // 将 Tab 键绑定到自动补全
+  ]),
 ];
 </script>
 
@@ -106,4 +181,5 @@ const extensions = [
   min-height: 5px !important; /* 分隔条的宽度 */
 
 }
+
 </style>

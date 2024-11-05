@@ -69,3 +69,18 @@
         }
     }
 }
+
+.tree-node-title {
+    display: flex;
+    align-items: center;
+}
+
+.tree-node-text {
+    flex-grow: 1;
+    padding: 0 5px;
+    line-height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+}

@@ -91,7 +91,6 @@ import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
 import throttle from 'lodash/throttle';
 import {useShowObjStore} from "@/store/showObjStore";
 import {generateUUID} from "@/ts/interfaces";
-import Resizer from "@/view/common/Resizer.vue";
 
 
 onMounted(async () => {
@@ -481,18 +480,5 @@ function resetDatabaseChildren(parentTitle: string, title: string) {
   transform: translateY(-2px);
 }
 
-.tree-node-title {
-  display: flex;
-  align-items: center;
-}
 
-.tree-node-text {
-  flex-grow: 1;
-  padding: 0 5px;
-  line-height: 20px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-}
 </style>
