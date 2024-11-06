@@ -32,7 +32,7 @@
   <a-table :columns="columns" :data-source="tableData" :pagination="pagination"
            :row-selection="rowSelection" style="min-height: 500px">
     <template #bodyCell="{ column, record,index }">
-      <span v-if="column.key =='index'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
+      <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
     </template>
   </a-table>
 

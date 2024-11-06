@@ -7,7 +7,7 @@
       <template #bodyCell="{text, column, record,index }">
         <a-dropdown :trigger="['contextmenu']">
           <div>
-            <span v-if="column.key =='index'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
+            <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
             <span v-else>{{text}}</span>
           </div>
           <template #overlay>

@@ -5,14 +5,14 @@
            >
 
     <template #bodyCell="{text, column, record,index }">
-      <span v-if="column.key =='index'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
+      <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
     </template>
   </a-table>
 </template>
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from "vue";
-import {getTableColumnVueList, queryTableDateByPage, test} from "@/view/table/tableAboutApi";
+import {getTableColumnVueList, queryTableDateByPage} from "@/view/table/tableAboutApi";
 import {useGlobalStore} from "@/store/globalStore";
 
 //region 表基础相关
@@ -24,7 +24,6 @@ const selectedRow = ref([])
 
 const rowSelection = ref({
   checkStrictly: false,
-  columnWidth: 50,
   fixed: true,
   selectedRowKeys: selectedRowKeys,
   selectedRow: selectedRow,
@@ -36,7 +35,6 @@ const rowSelection = ref({
 
 const pagination = reactive({
   current: 1,
-
   pageSize: 20,
   showTotal: total => `共 ${total} 条`,
   total: 0,

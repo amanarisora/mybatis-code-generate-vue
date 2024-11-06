@@ -1,33 +1,43 @@
 <template>
   <div style="height: 100%">
-    <a-space style="padding: 5px 0 5px 0">
+    <a-config-provider
+        :theme="{
+      algorithm: theme.darkAlgorithm,
+      token: {
+        colorPrimaryBg: '#30477b',
+        colorBgBase: '#1d1d1d'
+      }
+    }"
+    >
+      <a-space style="padding: 5px 0 5px 0">
 
-      <customSelect v-model:value="datasourceName" :options="datasourceData">
-        <template #prefixIcon>
-          <MysqlOnSmall class="mysql-icon-small" />
-        </template>
-        <template #itemIcon>
-          <MysqlOnSmall class="mysql-icon-small" />
-        </template>
-      </customSelect>
-      <customSelect v-model:value="databaseName" :options="databaseData">
-        <template #prefixIcon>
-          <DatabaseOnSmall class="mysql-icon-small"/>
-        </template>
-        <template #itemIcon>
-          <DatabaseOnSmall class="mysql-icon-small"/>
-        </template>
-      </customSelect>
+        <customSelect v-model:value="datasourceName" :options="datasourceData">
+          <template #prefixIcon>
+            <MysqlOnSmall class="mysql-icon-small" />
+          </template>
+          <template #itemIcon>
+            <MysqlOnSmall class="mysql-icon-small" />
+          </template>
+        </customSelect>
+        <customSelect v-model:value="databaseName" :options="databaseData">
+          <template #prefixIcon>
+            <DatabaseOnSmall class="mysql-icon-small"/>
+          </template>
+          <template #itemIcon>
+            <DatabaseOnSmall class="mysql-icon-small"/>
+          </template>
+        </customSelect>
 
-      <a-button class="green" @click="console.log(templateContent)">
-        <SaveOutlined/>
-        保存
-      </a-button>
-      <a-button type="primary">
-        <PlayCircleOutlined/>
-        运行
-      </a-button>
-    </a-space>
+        <a-button class="green" @click="saveQuery">
+          <SaveOutlined/>
+          保存
+        </a-button>
+        <a-button type="primary" @click="runSql">
+          <PlayCircleOutlined/>
+          运行
+        </a-button>
+      </a-space>
+    </a-config-provider>
     <SplitPanes horizontal style="height: calc(100% - 42px)">
       <Pane :min-size="10" style="overflow: auto;">
         <codemirror
@@ -37,16 +47,12 @@
             class="codemirror-container"
         />
       </Pane>
-      <pane :min-size="10" style="overflow: auto;">
-        <codemirror style="height: 100%"
-            v-model="templateContent"
-            :extensions="extensions"
-            class="codemirror-container"
-        />
+      <pane :min-size="10" >
+        <QueryResult :panes="panes" :isChanged="isChanged" style="width: 100%;height: 100%;background-color: rgba(0,0,0,0.8)"/>
       </pane>
     </SplitPanes>
-
   </div>
+  <SaveQueryMadal v-model:open="openSaveQueryModal"/>
 </template>
 
 <script setup lang="ts">
@@ -64,11 +70,17 @@ import {useShowObjStore} from "@/store/showObjStore";
 import MysqlOnSmall from "@/assets/mysql-on-small.svg";
 import customSelect from "@/view/common/customSelect.vue";
 import DatabaseOnSmall from '@/assets/database-on-small.svg'
-import {BasicAutoCompletion} from "@/view/table/query";
+import {BasicAutoCompletion, QueryResultPaneObj} from "@/view/table/query";
+import {runQuerySql} from "@/view/table/tableAboutApi";
+import {useGlobalStore} from "@/store/globalStore";
+import {message, theme} from "ant-design-vue";
+import QueryResult from "@/view/table/QueryResult.vue";
+import SaveQueryMadal from "@/view/table/SaveQueryMadal.vue";
 
 const showObjStore = useShowObjStore()
 
-const isNewQuery = false
+const isNewQuery = true
+const openSaveQueryModal = ref(false)
 const datasourceName: any = ref('')
 const databaseName: any = ref('')
 const datasourceData: any = ref([])
@@ -77,13 +89,20 @@ const databaseData: any = ref([])
 const templateContent = ref('import from');
 
 const props = defineProps({
-  datasourceName: String,
-  databaseName: String
+  datasourceName: {
+    type: String,
+    required: true,
+  },
+  databaseName: {
+    type: String,
+    required: true,
+  },
 })
 const options:any = ref([])
+const optionsSet:any = new Set()
 onMounted(() => {
   showObjStore.treeDataMap.forEach((value, key) => {
-    options.value.push({ label: key, type: 'text' })
+    optionsSet.add({ label: key, type: 'text' })
     datasourceData.value.push({
       value: key,
       label: key
@@ -92,18 +111,26 @@ onMounted(() => {
   const childMap = showObjStore.treeDataMap.get(props.datasourceName)?.childMap;
   if (childMap) {
     childMap.forEach((value, key) => {
-      options.value.push({ label: key, type: 'text' })
+      optionsSet.add({ label: key, type: 'text' })
       databaseData.value.push({
         value: key,
         label: key
       });
     });
   }
+  showObjStore.tableObjData.forEach((value, key) => {
+    value.forEach((v,k) => {
+      v.forEach(item=>{
+        optionsSet.add({ label: item.tableName, type: 'text' })
+      })
+    })
+  })
+  options.value = Array.from(optionsSet)
   databaseName.value = props.databaseName;
   datasourceName.value = props.datasourceName;
 });
 
-
+//region codemirror配置
 let customCompletion = autocompletion({
   override: [
     (context: CompletionContext) => {
@@ -143,7 +170,7 @@ const computedExtensions = computed(() => {
     oneDark,
     EditorView.theme({
       '&': {
-        fontSize: '20px', // 修改字体大小
+        fontSize: '14px', // 修改字体大小
         fontFamily: 'Microsoft YaHei',
       },
     }),
@@ -173,6 +200,47 @@ const extensions = [
     {key: 'Tab', run: acceptCompletion}, // 将 Tab 键绑定到自动补全
   ]),
 ];
+//endregion
+
+async function saveQuery(){
+  if(isNewQuery){
+    openSaveQueryModal.value = true
+  }
+}
+
+const panes = ref<QueryResultPaneObj[]>([])
+const isChanged = ref(0)
+async function runSql(){
+  const data:any = await runQuerySql({databaseName: databaseName.value,sql:templateContent.value,
+    user:useGlobalStore().loginUser,ds:props.datasourceName});
+  if(data.code == 200){
+    message.success("运行成功")
+    panes.value = []
+    data.result.forEach((value,i)=>{
+      if(value.sqlType !== 'select'){
+        panes.value.push({
+          title:'结果'+(i+1),
+          key:'结果'+(i+1),
+          closable:true,
+          sql:value.sql,
+          affectedNum: value.affectedRowNumber,
+        })
+      }else{
+        panes.value.push({
+          title:'结果'+ (i+1),
+          key:'结果'+(i+1),
+          closable:true,
+          sql:value.sql,
+          columns: ref(value.columnVueList),
+          data: value.selectResultList
+        })
+      }
+    })
+    isChanged.value +=1
+  }
+
+}
+
 </script>
 
 <style scoped>
@@ -181,5 +249,20 @@ const extensions = [
   min-height: 5px !important; /* 分隔条的宽度 */
 
 }
+:deep(.cm-editor){
+  background: rgba(0, 0, 0, 0.8);
+}
 
+
+/* 选中标签的颜色 */
+:deep(.ant-tabs-tab-active) {
+  color: white !important; /* 选中时的颜色 */
+  background: #3c4348 !important;
+}
+:deep(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: white !important; /* 选中时的颜色 */
+}
+:deep(.ant-tabs .ant-tabs-tab):hover{
+  color: white !important;
+}
 </style>

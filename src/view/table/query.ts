@@ -3,7 +3,8 @@ export const BasicAutoCompletion = [
     { label: 'SELECT', type: 'keyword' },
     { label: 'FROM', type: 'keyword' },
     { label: 'WHERE', type: 'keyword' },
-    { label: 'INSERT', type: 'keyword' },
+    { label: 'INSERT INTO', type: 'keyword' },
+    { label: 'VALUES', type: 'keyword' },
     { label: 'UPDATE', type: 'keyword' },
     { label: 'DELETE', type: 'keyword' },
     { label: 'JOIN', type: 'keyword' },
@@ -49,3 +50,14 @@ export const BasicAutoCompletion = [
     { label: "magic", type: "text", apply: "⠁⭒*.✩.*⭒⠁", detail: "macro" },
 
 ]
+
+export interface QueryResultPaneObj {
+    title:string,
+    key:string,
+    closable:boolean,
+    sql:string,
+    affectedNum?:number;
+    columns?:any,
+    data?:[]
+
+}
