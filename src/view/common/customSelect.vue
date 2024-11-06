@@ -29,8 +29,7 @@
 </template>
 
 <script setup>
-import {onMounted, ref, watch} from 'vue';
-import { defineProps } from 'vue';
+import {ref, watch} from 'vue';
 import { DownOutlined } from "@ant-design/icons-vue";
 
 const value = defineModel("value")

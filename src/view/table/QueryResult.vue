@@ -19,6 +19,9 @@
             <a-row>
               <span v-if="pane.affectedNum">共影响 {{ pane.affectedNum }} 行</span>
             </a-row>
+            <a-row>
+              <span v-if="pane.data.length==0">没有查到数据</span>
+            </a-row>
           </a-col>
           <div style="display:flex;width: 100%;">
             <a-table v-if="pane.columns" :columns="pane.columns" :data-source="pane.data"
@@ -54,7 +57,7 @@ const props = defineProps({
     required: true
   }
 })
-
+const activeKey = ref('')
 const panes:any = ref([])
 const columnList:any = ref([])
 const tableScrollWidth = ref(0)
@@ -84,10 +87,10 @@ onBeforeUnmount(() => {
 
 watch(() => props.isChanged, (value) => {
   panes.value = props.panes
-  console.log(panes.value)
+  activeKey.value = panes.value[0].key
 }, {deep: true})
 
-const activeKey = ref('')
+
 
 /*function onEdit(targetKey: string | MouseEvent, action: string){
   if (action !== 'add') {

@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 
-import {TableObjectColumn} from "@/view/common/ShowObject";
+import {QueryObjectColumns, TableObjectColumn} from "@/view/common/ShowObject";
 import {onMounted, onUpdated, reactive, ref, watch} from "vue";
 import {useShowObjStore} from "@/store/showObjStore";
 
@@ -79,8 +79,16 @@ function sizeChange(current, size) {
 
 watch(()=>showObjStore.isTableObjDataChanged,()=>{
   pagination.current = 1
-  if (showObjStore.tableObjData.has(showObjStore.currentSelectedDatasource)){
-    tableData.value = showObjStore.tableObjData.get(showObjStore.currentSelectedDatasource).get(showObjStore.currentSelectedDatabase)
+  if (showObjStore.currentObjType == 2){
+    if (showObjStore.tableObjData.has(showObjStore.currentSelectedDatasource)){
+      column.value = TableObjectColumn
+      tableData.value = showObjStore.tableObjData.get(showObjStore.currentSelectedDatasource).get(showObjStore.currentSelectedDatabase)
+    }
+  }else if (showObjStore.currentObjType == 5){
+    if (showObjStore.queryObjData.has(showObjStore.currentSelectedDatasource)){
+      column.value = QueryObjectColumns
+      tableData.value = showObjStore.queryObjData.get(showObjStore.currentSelectedDatasource).get(showObjStore.currentSelectedDatabase)
+    }
   }
 
 })

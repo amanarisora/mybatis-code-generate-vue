@@ -14,7 +14,7 @@
 
         <DatasourceTree @openTerminal="openTerminal" @openTableData="openTableData" @openNewQuery="openNewQuery"
         @updateTabListWhenDatasourceClosed="updateTabListWhenDatasourceClosed"
-        @updateTabListWhenDatabaseClosed="updateTabListWhenDatabaseClosed"/>
+        @updateTabListWhenDatabaseClosed="updateTabListWhenDatabaseClosed" @openQuery="openQuery"/>
         <div class="resizer" @mousedown="startResize"></div>
 
       </a-layout-sider>
@@ -22,10 +22,9 @@
       <div v-if="isResizing" class="resize-line sider" :style="{ transform: `translateX(${resizerPosition}px)` }"></div>
       <div v-if="isResizing" class="overlay"></div>
       <a-layout-content class="sider" style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;overflow: auto">
-
         <a-tabs v-model:activeKey="activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}" @edit="onEdit">
-          <a-tab-pane v-for="pane in panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%">
-            <component :is="pane.component" v-bind="pane.props" style="height: 100%;"/>
+          <a-tab-pane v-for="pane in showObjStore.panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%">
+            <component :is="pane.component" v-bind="pane.props"/>
           </a-tab-pane>
         </a-tabs>
 
@@ -46,36 +45,33 @@ import TableData from "@/view/table/TableData.vue";
 import ShowObject from "@/view/common/ShowObject.vue";
 import {generateUUID} from "@/ts/interfaces";
 import Query from "@/view/table/Query.vue";
+import {useShowObjStore} from "@/store/showObjStore";
 
 
 const globalStore =  useGlobalStore()
+const showObjStore =  useShowObjStore()
 const open1 = ref(false)
 
 onMounted(() => {
 
 });
 
-const panes = ref<{ title: string; key: string; component:any; closable?: boolean;
-  props?:object;databaseName?:string;datasourceName?:string;
-}[]>([
-  { title: '对象', key: 'ShowObjectKey',component:markRaw(ShowObject),closable:false },
-]);
-const activeKey = ref(panes.value[0].key)
+const activeKey = ref(showObjStore.panes[0].key)
 
 function onEdit(targetKey: string | MouseEvent, action: string){
   if (action !== 'add') {
     let lastIndex = 0;
-    panes.value.forEach((pane, i) => {
+    showObjStore.panes.forEach((pane, i) => {
       if (pane.key === targetKey) {
         lastIndex = i - 1;
       }
     });
-    panes.value = panes.value.filter(pane => pane.key !== targetKey);
-    if (panes.value.length && activeKey.value === targetKey) {
+    showObjStore.panes = showObjStore.panes.filter(pane => pane.key !== targetKey);
+    if (showObjStore.panes.length && activeKey.value === targetKey) {
       if (lastIndex >= 0) {
-        activeKey.value = panes.value[lastIndex].key;
+        activeKey.value = showObjStore.panes[lastIndex].key;
       } else {
-        activeKey.value = panes.value[0].key;
+        activeKey.value = showObjStore.panes[0].key;
       }
     }
   }
@@ -83,14 +79,14 @@ function onEdit(targetKey: string | MouseEvent, action: string){
 
 function openTerminal(datasourceName:string){
   const terminalTab = datasourceName + ' - 命令行'
-  panes.value.push({title: terminalTab, key: terminalTab,datasourceName:datasourceName,component:markRaw(MySqlTerminalModal)})
+  showObjStore.panes.push({title: terminalTab, key: terminalTab,datasourceName:datasourceName,component:markRaw(MySqlTerminalModal)})
   activeKey.value = terminalTab
 }
 
 function openTableData(datasourceName:string,databaseName:string,tableName:string){
   const key = tableName+' - '+databaseName
-  if(!panes.value.some(obj => obj.key === key)){
-    panes.value.push({title: key, key: key,component:markRaw(TableData),databaseName:databaseName,datasourceName:datasourceName,
+  if(!showObjStore.panes.some(obj => obj.key === key)){
+    showObjStore.panes.push({title: key, key: key,component:markRaw(TableData),databaseName:databaseName,datasourceName:datasourceName,
       props:{datasourceName:datasourceName,databaseName:databaseName,tableName:tableName}})
   }
   activeKey.value = key
@@ -98,35 +94,51 @@ function openTableData(datasourceName:string,databaseName:string,tableName:strin
 
 function openNewQuery(datasourceName:string,databaseName:string){
   const key = generateUUID()
-  panes.value.push({title: "无标题 - 查询", key: key,component:markRaw(Query),
+  showObjStore.panes.push({title: "无标题 - 查询", key: key,component:markRaw(Query),
     databaseName:databaseName,datasourceName:datasourceName,
-    props:{datasourceName:datasourceName,databaseName:databaseName}})
+    props:{datasourceName:datasourceName,databaseName:databaseName,isNewQuery:true,queryName:'',queryText:"",id:key},})
+  activeKey.value = key
+}
+
+function openQuery(datasourceName:string,databaseName:string,queryName:string,queryText:string){
+  let key = generateUUID()
+  const title = `${queryName} @${databaseName}(${datasourceName}) - 查询`
+  if (!showObjStore.panes.some(obj => obj.title === title)){
+    showObjStore.panes.push({title: `${queryName} @${databaseName}(${datasourceName}) - 查询`, key: key,component:markRaw(Query),
+      databaseName:databaseName,datasourceName:datasourceName,
+      props:{datasourceName:datasourceName,databaseName:databaseName,isNewQuery:false,queryName:queryName,queryText:queryText,id:key},})
+  }
+  showObjStore.panes.forEach(item=>{
+    if (item.title === title){
+      key = item.key
+    }
+  })
   activeKey.value = key
 }
 
 function updateTabListWhenDatasourceClosed(datasourceName:string){
   let isRelated = false;
-  panes.value.forEach((pane) => {
+  showObjStore.panes.forEach((pane) => {
     if (pane.key === activeKey.value && pane.datasourceName === datasourceName) {
       isRelated = true;
     }
   })
-  panes.value = panes.value.filter(pane => pane.datasourceName !== datasourceName);
+  showObjStore.panes = showObjStore.panes.filter(pane => pane.datasourceName !== datasourceName);
   if (isRelated){
-    activeKey.value = panes.value[0].key;
+    activeKey.value = showObjStore.panes[0].key;
   }
 }
 
 function updateTabListWhenDatabaseClosed(databaseName:string){
   let isRelated = false;
-  panes.value.forEach((pane) => {
+  showObjStore.panes.forEach((pane) => {
     if (pane.key === activeKey.value && pane.databaseName === databaseName) {
       isRelated = true;
     }
   })
-  panes.value = panes.value.filter(pane => pane.databaseName !== databaseName);
+  showObjStore.panes = showObjStore.panes.filter(pane => pane.databaseName !== databaseName);
   if (isRelated){
-    activeKey.value = panes.value[0].key;
+    activeKey.value = showObjStore.panes[0].key;
   }
 }
 

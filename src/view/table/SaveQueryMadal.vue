@@ -6,7 +6,7 @@
         <a-row class="icon-form">
           <Vite style="transform: scale(0.6)"/>
           <div class="divider"></div> <!-- 添加分隔线 -->
-          <DatabaseOn style="transform: scale(0.6);"/>
+          <QueryOn style="transform: scale(0.6);"/>
         </a-row>
         <a-form ref="form"
                 :model="formData"
@@ -24,22 +24,17 @@
         </a-form>
       </a-col>
     </div>
-
-
   </a-modal>
 </template>
 
 <script setup lang="ts">
 
 import Vite from "@/assets/vite.svg";
-import DatabaseOn from "@/assets/database-on.svg";
+import QueryOn from "@/assets/query-on.svg";
 import {reactive, ref} from "vue";
-import {createDatabase} from "@/Api";
-import {useGlobalStore} from "@/store/globalStore";
-import {message} from "ant-design-vue";
 
 const props = defineProps({open: Boolean});
-const emit = defineEmits(['update:open']);
+const emit = defineEmits(['update:open','saveQuerySubmit']);
 const form = ref()
 const formData = reactive({
   queryName: ''
@@ -47,14 +42,7 @@ const formData = reactive({
 
 function submit() {
   form.value.validate().then(async v => {
-    const data = await createDatabase({
-      queryName: formData.queryName,
-      user: useGlobalStore().loginUser,
-      ds: props.ds
-    })
-    if (data.code == 200) {
-      message.success("保存查询成功")
-    }
+    emit('saveQuerySubmit',formData.queryName)
     form.value.resetFields()
     emit('update:open', false)
   }).catch(err => {

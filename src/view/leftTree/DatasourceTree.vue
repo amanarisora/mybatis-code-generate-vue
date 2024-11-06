@@ -17,7 +17,7 @@
             <DatabaseOnSmall v-else-if="type==1&&children.length>0" class="mysql-icon-small" style="float: left;"/>
             <DatabaseOffSmall v-else-if="type==1&&children.length==0" class="mysql-icon-small" style="float: left;"/>
             <TableSmall v-else-if="type==2 || type ==3" class="mysql-icon-small" style="float: left;"/>
-            <QuerySmall v-else-if="type==4" class="mysql-icon-small" style="float: left;"/>
+            <QuerySmall v-else-if="type==4 ||type == 5" class="mysql-icon-small" style="float: left;"/>
             <a-tooltip v-if="type==2" placement="right">
               <template #title>
                 <span>{{ title }}</span>
@@ -68,7 +68,7 @@
 <script setup lang="ts">
 import {h, nextTick, onMounted, onUpdated, reactive, ref, watch} from "vue";
 import {
-  deleteDatabase,
+  deleteDatabase, deleteDataSource,
   deleteFolder,
   getAllDataBases,
   getAllDataSource,
@@ -91,6 +91,7 @@ import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
 import throttle from 'lodash/throttle';
 import {useShowObjStore} from "@/store/showObjStore";
 import {generateUUID} from "@/ts/interfaces";
+import {deleteQuery} from "@/view/table/tableAboutApi";
 
 
 onMounted(async () => {
@@ -120,7 +121,7 @@ const editInput = ref()
 const editingKey = ref<string | null>(null);
 
 const showObjStore = useShowObjStore()
-const emit = defineEmits(["openTerminal","openTableData","openNewQuery","updateTabListWhenDatasourceClosed","updateTabListWhenDatabaseClosed"])
+const emit = defineEmits(["openTerminal","openTableData","openNewQuery","updateTabListWhenDatasourceClosed","updateTabListWhenDatabaseClosed","openQuery"])
 
 let clickTimeout: number | null = null;
 
@@ -156,16 +157,20 @@ function selectTree(keys, e) {
       }*/
       break
     case 2:
-      if (showObjStore.currentSelectedDatabase !== e.node.parentId) {
+    case 3:
+      if (showObjStore.currentSelectedDatabase !== e.node.parentId || showObjStore.currentObjType !== 2) {
         showObjStore.currentSelectedDatabase = e.node.parentId
         showObjStore.currentSelectedDatasource = e.node.datasourceName
+        showObjStore.currentObjType = 2
         showObjStore.isTableObjDataChanged += 1
       }
       break
-    case 3:
-      if (showObjStore.currentSelectedDatabase !== e.node.parentId) {
+    case 4:
+    case 5:
+      if (showObjStore.currentSelectedDatabase !== e.node.parentId || showObjStore.currentObjType !== 5) {
         showObjStore.currentSelectedDatabase = e.node.parentId
         showObjStore.currentSelectedDatasource = e.node.datasourceName
+        showObjStore.currentObjType = 5
         showObjStore.isTableObjDataChanged += 1
       }
       break
@@ -199,6 +204,9 @@ async function handleDoubleClick(e, node) {
     case 2:
       emit("openTableData",node.datasourceName,node.parentId, node.title)
       break
+    case 5:
+      emit("openQuery",node.datasourceName,node.parentId, node.title,node.queryText)
+      break
   }
   if (!datasourceExpandKeys.value.includes(node.key)) {
     datasourceExpandKeys.value.push(node.key)
@@ -210,7 +218,18 @@ async function handleDoubleClick(e, node) {
 //region -----重载数据-----
 async function reloadDataSourceList() {
   let data: any = await getAllDataSource({user: useGlobalStore().loginUser});
-  datasourceTreeData.value = data.result
+  const dataMap = new Map(data.result.map(item => [item.datasourceName, item]));
+
+  datasourceTreeData.value.forEach((item, index) => {
+    if (!dataMap.has(item.datasourceName)) {
+      datasourceTreeData.value.splice(index, 1);
+    }
+  });
+  data.result.forEach(item => {
+    if (!datasourceTreeData.value.some(ds => ds.datasourceName === item.datasourceName)) {
+      datasourceTreeData.value.push(item);
+    }
+  });
   let tempMap = new Map()
   datasourceTreeData.value.forEach((item: any) => {
     if (showObjStore.treeDataMap.has(item.title)) {
@@ -251,7 +270,7 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
   const data: any = await getAllTableList({
     user: useGlobalStore().loginUser,
     ds: datasourceName,
-    databaseName: databaseName
+    databaseName: databaseName,
   });
 
   if (data.code === 200) {
@@ -277,18 +296,11 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
     item.children.push(query)
     const tableTree = data.result.tableTree;
     const tableColumn = data.result.tableColumn;
-    const batchSize = 20; // 每批加载的表数量
+    const queryTree = data.result.queryTree;
+    const queryColumn = data.result.queryColumn;
 
-    // 分批加载 tableTree
-    for (let i = 0; i < tableTree.length; i += batchSize) {
-      const batch = tableTree.slice(i, i + batchSize);
-      // setDatabaseChildren(datasourceName, databaseName, batch);
-      table.children.push(...batch)
-      datasourceTreeData.value.push({})
-      datasourceTreeData.value.pop()
-      await new Promise((resolve) => setTimeout(resolve, 20)); // 延迟100毫秒
-    }
-
+    // 加载 tableTree
+    table.children.push(...tableTree)
     // 更新 tableColumn 和其他状态
     if(showObjStore.tableObjData.has(datasourceName)){
       showObjStore.tableObjData.get(datasourceName).set(databaseName, tableColumn);
@@ -296,6 +308,17 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
       showObjStore.tableObjData.set(datasourceName,new Map())
       showObjStore.tableObjData.get(datasourceName).set(databaseName, tableColumn)
     }
+    //加载查询
+    query.children.push(...queryTree)
+    if(showObjStore.queryObjData.has(datasourceName)){
+      showObjStore.queryObjData.get(datasourceName).set(databaseName, queryTree);
+    }else {
+      showObjStore.queryObjData.set(datasourceName,new Map())
+      showObjStore.queryObjData.get(datasourceName).set(databaseName, queryColumn)
+    }
+    //刷新
+    datasourceTreeData.value.push({})
+    datasourceTreeData.value.pop()
     showObjStore.isTableObjDataChanged += 1;
   }
 }
@@ -356,39 +379,7 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
 
       break
     case 'delete':
-      if (type == 0) {
-
-      } else if (type == 1) {
-        Modal.confirm({
-          title: h('div', [
-
-            h('span', {style: {color: 'red', fontWeight: 'bold'}}, '删除数据库')
-          ]),
-          icon: h(ExclamationCircleOutlined),
-          content: h('div', [
-            '删除数据库将会删除其下',h('span', {style: {color: 'red', fontWeight: 'bold'}}, '所有数据'),'且',
-            h('span', {style: {color: 'red', fontWeight: 'bold'}}, '后果不可逆'),
-            '，是否继续?'
-          ]),
-          okText: '确定',
-          okType: 'danger',
-          cancelText: '取消',
-          async onOk() {
-            const result: any = await deleteDatabase({
-              databaseName: title,
-              user: globalStore.loginUser,
-              ds: data.parentId
-            })
-            if (result.code == 200) {
-              message.success("删除成功")
-            }
-            await reloadDatabase(data.parentId)
-          },
-          onCancel() {
-          },
-        });
-
-      }
+      deleteTreeNode(data, key, menuKey, title, type)
       break
     case 'rename':
       editingKey.value = key;
@@ -434,6 +425,97 @@ async function submitEdit(data) {
 
   }
   editingKey.value = null
+}
+
+function deleteTreeNode(data: any, key: string, menuKey: string, title: string, type: number){
+  switch (type){
+    case 0:
+      Modal.confirm({
+        title: h('div', [
+
+          h('span', {style: {color: 'red', fontWeight: 'bold'}}, '删除数据连接')
+        ]),
+        icon: h(ExclamationCircleOutlined),
+        content: h('div', [
+          '删除数据连接将',
+          h('span', {style: {color: 'red', fontWeight: 'bold'}}, '无法恢复'),
+          '，是否继续?'
+        ]),
+        okText: '确定',
+        okType: 'danger',
+        cancelText: '取消',
+        async onOk() {
+          const result: any = await deleteDataSource({
+            user:globalStore.loginUser,
+            name:title
+          })
+          if (result.code == 200) {
+            message.success("删除成功")
+          }
+          await reloadDataSourceList()
+        },
+        onCancel() {
+        },
+      });
+      break
+    case 1:
+      Modal.confirm({
+        title: h('div', [
+
+          h('span', {style: {color: 'red', fontWeight: 'bold'}}, '删除数据库')
+        ]),
+        icon: h(ExclamationCircleOutlined),
+        content: h('div', [
+          '删除数据库将会删除其下',h('span', {style: {color: 'red', fontWeight: 'bold'}}, '所有数据'),'且',
+          h('span', {style: {color: 'red', fontWeight: 'bold'}}, '后果不可逆'),
+          '，是否继续?'
+        ]),
+        okText: '确定',
+        okType: 'danger',
+        cancelText: '取消',
+        async onOk() {
+          const result: any = await deleteDatabase({
+            databaseName: title,
+            user: globalStore.loginUser,
+            ds: data.parentId
+          })
+          if (result.code == 200) {
+            message.success("删除成功")
+          }
+          await reloadDatabase(data.parentId)
+        },
+        onCancel() {
+        },
+      });
+      break
+    case 5:
+      Modal.confirm({
+        title: h('div', [
+
+          h('span', {style: {color: 'red', fontWeight: 'bold'}}, '删除查询')
+        ]),
+        icon: h(ExclamationCircleOutlined),
+        content: h('div', [
+          '删除查询将',
+          h('span', {style: {color: 'red', fontWeight: 'bold'}}, '无法恢复'),
+          '，是否继续?'
+        ]),
+        okText: '确定',
+        okType: 'danger',
+        cancelText: '取消',
+        async onOk() {
+          const result: any = await deleteQuery({
+            id: key
+          })
+          if (result.code == 200) {
+            message.success("删除成功")
+          }
+          await reloadTableList(data.datasourceName,data.parentId)
+        },
+        onCancel() {
+        },
+      });
+  }
 }
 
 //region -----重载数据方法-----

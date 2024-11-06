@@ -3,7 +3,8 @@ export const TableObjectColumn = [
         key: 'cs121sn801n',
         title: '序号',
         width: 60,
-        fixed: "left"
+        fixed: "left",
+        resizable: true,
     },
     {
         dataIndex: 'tableName',
@@ -52,8 +53,21 @@ export const TableObjectColumn = [
         dataIndex: 'editTime',
         key: 'editTime',
         title: '修改日期',
-        width: 180,
-        resizable: true,
     },
 
+]
+
+export const QueryObjectColumns = [
+    {
+        key: 'cs121sn801n',
+        title: '序号',
+        width: 60,
+        fixed: "left",
+        resizable: true,
+    },
+    {
+        dataIndex: 'queryName',
+        key: 'queryName',
+        title: '名称',
+    }
 ]

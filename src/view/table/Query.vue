@@ -28,7 +28,7 @@
           </template>
         </customSelect>
 
-        <a-button class="green" @click="saveQuery">
+        <a-button class="green" @click="save">
           <SaveOutlined/>
           保存
         </a-button>
@@ -52,7 +52,7 @@
       </pane>
     </SplitPanes>
   </div>
-  <SaveQueryMadal v-model:open="openSaveQueryModal"/>
+  <SaveQueryMadal v-model:open="openSaveQueryModal" @saveQuerySubmit="saveQuerySubmit"/>
 </template>
 
 <script setup lang="ts">
@@ -71,7 +71,7 @@ import MysqlOnSmall from "@/assets/mysql-on-small.svg";
 import customSelect from "@/view/common/customSelect.vue";
 import DatabaseOnSmall from '@/assets/database-on-small.svg'
 import {BasicAutoCompletion, QueryResultPaneObj} from "@/view/table/query";
-import {runQuerySql} from "@/view/table/tableAboutApi";
+import {runQuerySql, saveQuery} from "@/view/table/tableAboutApi";
 import {useGlobalStore} from "@/store/globalStore";
 import {message, theme} from "ant-design-vue";
 import QueryResult from "@/view/table/QueryResult.vue";
@@ -79,14 +79,15 @@ import SaveQueryMadal from "@/view/table/SaveQueryMadal.vue";
 
 const showObjStore = useShowObjStore()
 
-const isNewQuery = true
+let isNewQuery = true
 const openSaveQueryModal = ref(false)
 const datasourceName: any = ref('')
 const databaseName: any = ref('')
 const datasourceData: any = ref([])
 const databaseData: any = ref([])
+let queryName
 
-const templateContent = ref('import from');
+const templateContent = ref('');
 
 const props = defineProps({
   datasourceName: {
@@ -96,6 +97,22 @@ const props = defineProps({
   databaseName: {
     type: String,
     required: true,
+  },
+  queryName:{
+    type:String,
+    required: true
+  },
+  queryText:{
+    type:String,
+    required: true
+  },
+  isNewQuery:{
+    type:Boolean,
+    required:true
+  },
+  id:{
+    type:String,
+    required: true
   },
 })
 const options:any = ref([])
@@ -128,6 +145,9 @@ onMounted(() => {
   options.value = Array.from(optionsSet)
   databaseName.value = props.databaseName;
   datasourceName.value = props.datasourceName;
+  isNewQuery = props.isNewQuery
+  queryName = props.queryName
+  templateContent.value = props.queryText
 });
 
 //region codemirror配置
@@ -202,15 +222,36 @@ const extensions = [
 ];
 //endregion
 
-async function saveQuery(){
+async function save(){
   if(isNewQuery){
     openSaveQueryModal.value = true
+  }else {
+    await saveQuerySubmit(queryName)
+  }
+}
+async function saveQuerySubmit(name:string){
+  const data:any = await saveQuery({queryName: name,queryText:templateContent.value,databaseName:props.databaseName,datasourceName:props.datasourceName,
+    isNewQuery:isNewQuery,user:useGlobalStore().loginUser})
+  if (data.code ==200){
+    message.success("保存成功")
+    isNewQuery = false
+    queryName = name
+    showObjStore.panes.forEach(item=>{
+      if (item.key == props.id){
+        item.title = `${queryName} @${databaseName.value}(${datasourceName.value}) - 查询`
+      }
+    })
+    const a:any = {}
+    showObjStore.panes.push(a)
+    showObjStore.panes.pop()
   }
 }
 
 const panes = ref<QueryResultPaneObj[]>([])
 const isChanged = ref(0)
+//运行sql
 async function runSql(){
+
   const data:any = await runQuerySql({databaseName: databaseName.value,sql:templateContent.value,
     user:useGlobalStore().loginUser,ds:props.datasourceName});
   if(data.code == 200){
