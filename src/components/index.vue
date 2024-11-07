@@ -10,19 +10,21 @@
     </a-layout-header>
 
     <a-layout style="height:100%;background-image: url('/main.png');background-size: cover;">
-      <a-layout-sider class="sider" :width="siderWidth" style="height: 100%;overflow: auto;overflow-x: hidden">
+      <a-layout-sider class="sider" :width="siderWidth" style="height: 100%;overflow: auto;overflow-x: hidden;">
 
-        <DatasourceTree @openTerminal="openTerminal" @openTableData="openTableData" @openNewQuery="openNewQuery"
-        @updateTabListWhenDatasourceClosed="updateTabListWhenDatasourceClosed"
-        @updateTabListWhenDatabaseClosed="updateTabListWhenDatabaseClosed" @openQuery="openQuery"/>
-        <div class="resizer" @mousedown="startResize"></div>
+        <div style="position: relative">
+          <DatasourceTree @openTerminal="openTerminal" @openNewQuery="openNewQuery"
+                          @updateTabListWhenDatasourceClosed="updateTabListWhenDatasourceClosed"
+                          @updateTabListWhenDatabaseClosed="updateTabListWhenDatabaseClosed"/>
+          <div class="resizer" @mousedown="startResize"></div>
+        </div>
 
       </a-layout-sider>
 
       <div v-if="isResizing" class="resize-line sider" :style="{ transform: `translateX(${resizerPosition}px)` }"></div>
       <div v-if="isResizing" class="overlay"></div>
       <a-layout-content class="sider" style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;overflow: auto">
-        <a-tabs v-model:activeKey="activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}" @edit="onEdit">
+        <a-tabs v-model:activeKey="showObjStore.activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}" @edit="onEdit">
           <a-tab-pane v-for="pane in showObjStore.panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%">
             <component :is="pane.component" v-bind="pane.props"/>
           </a-tab-pane>
@@ -56,7 +58,6 @@ onMounted(() => {
 
 });
 
-const activeKey = ref(showObjStore.panes[0].key)
 
 function onEdit(targetKey: string | MouseEvent, action: string){
   if (action !== 'add') {
@@ -67,11 +68,11 @@ function onEdit(targetKey: string | MouseEvent, action: string){
       }
     });
     showObjStore.panes = showObjStore.panes.filter(pane => pane.key !== targetKey);
-    if (showObjStore.panes.length && activeKey.value === targetKey) {
+    if (showObjStore.panes.length && showObjStore.activeKey === targetKey) {
       if (lastIndex >= 0) {
-        activeKey.value = showObjStore.panes[lastIndex].key;
+        showObjStore.activeKey = showObjStore.panes[lastIndex].key;
       } else {
-        activeKey.value = showObjStore.panes[0].key;
+        showObjStore.activeKey = showObjStore.panes[0].key;
       }
     }
   }
@@ -80,16 +81,7 @@ function onEdit(targetKey: string | MouseEvent, action: string){
 function openTerminal(datasourceName:string){
   const terminalTab = datasourceName + ' - 命令行'
   showObjStore.panes.push({title: terminalTab, key: terminalTab,datasourceName:datasourceName,component:markRaw(MySqlTerminalModal)})
-  activeKey.value = terminalTab
-}
-
-function openTableData(datasourceName:string,databaseName:string,tableName:string){
-  const key = tableName+' - '+databaseName
-  if(!showObjStore.panes.some(obj => obj.key === key)){
-    showObjStore.panes.push({title: key, key: key,component:markRaw(TableData),databaseName:databaseName,datasourceName:datasourceName,
-      props:{datasourceName:datasourceName,databaseName:databaseName,tableName:tableName}})
-  }
-  activeKey.value = key
+  showObjStore.activeKey = terminalTab
 }
 
 function openNewQuery(datasourceName:string,databaseName:string){
@@ -97,48 +89,32 @@ function openNewQuery(datasourceName:string,databaseName:string){
   showObjStore.panes.push({title: "无标题 - 查询", key: key,component:markRaw(Query),
     databaseName:databaseName,datasourceName:datasourceName,
     props:{datasourceName:datasourceName,databaseName:databaseName,isNewQuery:true,queryName:'',queryText:"",id:key},})
-  activeKey.value = key
-}
-
-function openQuery(datasourceName:string,databaseName:string,queryName:string,queryText:string){
-  let key = generateUUID()
-  const title = `${queryName} @${databaseName}(${datasourceName}) - 查询`
-  if (!showObjStore.panes.some(obj => obj.title === title)){
-    showObjStore.panes.push({title: `${queryName} @${databaseName}(${datasourceName}) - 查询`, key: key,component:markRaw(Query),
-      databaseName:databaseName,datasourceName:datasourceName,
-      props:{datasourceName:datasourceName,databaseName:databaseName,isNewQuery:false,queryName:queryName,queryText:queryText,id:key},})
-  }
-  showObjStore.panes.forEach(item=>{
-    if (item.title === title){
-      key = item.key
-    }
-  })
-  activeKey.value = key
+  showObjStore.activeKey = key
 }
 
 function updateTabListWhenDatasourceClosed(datasourceName:string){
   let isRelated = false;
   showObjStore.panes.forEach((pane) => {
-    if (pane.key === activeKey.value && pane.datasourceName === datasourceName) {
+    if (pane.key === showObjStore.activeKey && pane.datasourceName === datasourceName) {
       isRelated = true;
     }
   })
   showObjStore.panes = showObjStore.panes.filter(pane => pane.datasourceName !== datasourceName);
   if (isRelated){
-    activeKey.value = showObjStore.panes[0].key;
+    showObjStore.activeKey = showObjStore.panes[0].key;
   }
 }
 
 function updateTabListWhenDatabaseClosed(databaseName:string){
   let isRelated = false;
   showObjStore.panes.forEach((pane) => {
-    if (pane.key === activeKey.value && pane.databaseName === databaseName) {
+    if (pane.key === showObjStore.activeKey && pane.databaseName === databaseName) {
       isRelated = true;
     }
   })
   showObjStore.panes = showObjStore.panes.filter(pane => pane.databaseName !== databaseName);
   if (isRelated){
-    activeKey.value = showObjStore.panes[0].key;
+    showObjStore.activeKey = showObjStore.panes[0].key;
   }
 }
 
@@ -199,11 +175,11 @@ function logOut() {
 
 .resizer {
   width: 5px;
+  height: 100%; /* 使用父容器的高度 */
   cursor: ew-resize;
-  position: absolute;
+  position: absolute; /* 相对于父容器定位 */
   top: 0;
-  right: 0;
-  bottom: 0;
+  right: 0; /* 确保在父容器的最右侧 */
   background-color: rgba(0, 0, 0, 0.1);
   z-index: 10; /* 确保 resizer 在滚动条之上 */
 }

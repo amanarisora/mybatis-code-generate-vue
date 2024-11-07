@@ -11,7 +11,7 @@
       </a-input>
     </div>
     <template #overlay>
-      <a-menu v-model:selectedKeys="selectedKeys" @click="handleMenuClick">
+      <a-menu v-model:selectedKeys="selectedKeys" @click="handleMenuClick" :style="{overflowY: 'auto',maxHeight: menuHeight}">
         <a-menu-item
             v-for="option in options"
             :key="option.value"
@@ -39,6 +39,11 @@ const props = defineProps({
     type: Array,
     required: true,
     default: () => [],
+  },
+  menuHeight: {
+    type: String,
+    required: false,
+    default: "500px",
   },
 });
 

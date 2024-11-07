@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref} from "vue";
+import {computed, onMounted, ref, watch} from "vue";
 import {PlayCircleOutlined, SaveOutlined} from "@ant-design/icons-vue";
 import {Codemirror} from "vue-codemirror";
 import {basicSetup} from "codemirror";
@@ -76,6 +76,7 @@ import {useGlobalStore} from "@/store/globalStore";
 import {message, theme} from "ant-design-vue";
 import QueryResult from "@/view/table/QueryResult.vue";
 import SaveQueryMadal from "@/view/table/SaveQueryMadal.vue";
+import {reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
 
 const showObjStore = useShowObjStore()
 
@@ -117,6 +118,8 @@ const props = defineProps({
 })
 const options:any = ref([])
 const optionsSet:any = new Set()
+let isInitialized = false; // 标志位
+
 onMounted(() => {
   showObjStore.treeDataMap.forEach((value, key) => {
     optionsSet.add({ label: key, type: 'text' })
@@ -148,7 +151,32 @@ onMounted(() => {
   isNewQuery = props.isNewQuery
   queryName = props.queryName
   templateContent.value = props.queryText
+  isInitialized = true
 });
+
+watch(datasourceName,async (value, oldValue)=>{
+  if(!isInitialized){
+    if(showObjStore.treeDataMap.has(value)){
+      let childMap = showObjStore.treeDataMap.get(value).childMap
+      if (childMap){
+        console.log(childMap.size)
+        if (childMap.size == 0){
+          await reloadDatabase(value)
+          childMap = showObjStore.treeDataMap.get(value).childMap
+        }
+        databaseData.value = []
+        childMap.forEach((value, key) => {
+          optionsSet.add({ label: key, type: 'text' })
+          databaseData.value.push({
+            value: key,
+            label: key
+          });
+        });
+        databaseName.value = databaseData.value[0]
+      }
+    }
+  }
+})
 
 //region codemirror配置
 let customCompletion = autocompletion({
@@ -229,9 +257,10 @@ async function save(){
     await saveQuerySubmit(queryName)
   }
 }
+
 async function saveQuerySubmit(name:string){
-  const data:any = await saveQuery({queryName: name,queryText:templateContent.value,databaseName:props.databaseName,datasourceName:props.datasourceName,
-    isNewQuery:isNewQuery,user:useGlobalStore().loginUser})
+  const data:any = await saveQuery({queryName: name,queryText:templateContent.value,databaseName:props.databaseName,
+    datasourceName:props.datasourceName, isNewQuery:isNewQuery,user:useGlobalStore().loginUser})
   if (data.code ==200){
     message.success("保存成功")
     isNewQuery = false
@@ -241,9 +270,7 @@ async function saveQuerySubmit(name:string){
         item.title = `${queryName} @${databaseName.value}(${datasourceName.value}) - 查询`
       }
     })
-    const a:any = {}
-    showObjStore.panes.push(a)
-    showObjStore.panes.pop()
+    await reloadQuery(props.datasourceName,props.databaseName)
   }
 }
 

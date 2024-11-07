@@ -2,7 +2,7 @@
   <div style="background-color: white;padding-top: 10px;width: 100%;">
     <a-tree
         style="font-size: 15px"
-        :tree-data="datasourceTreeData"
+        :tree-data="showObjStore.datasourceTreeData"
         v-model:selectedKeys="datasourceSelectedKeys"
         v-model:expandedKeys="datasourceExpandKeys"
         @select="selectTree"
@@ -34,14 +34,18 @@
           <template #overlay>
             <a-menu @click="({ key: menuKey }) => handleMenuClick(data,key, menuKey,title,type)">
               <a-menu-item key="open" v-if="children.length ==0 && (type !=3 &&type!=4)">打开</a-menu-item>
-              <a-menu-item key="close" v-if="type != 2&&children.length >0 &&(type !=3 &&type!=4)">关闭连接</a-menu-item>
+              <a-menu-item key="close" v-if="type != 2&&children.length >0 &&(type !=3 &&type!=4)">关闭连接
+              </a-menu-item>
               <a-menu-item key="addDatasource" v-if="type == 0">新建连接</a-menu-item>
               <a-menu-item key="editDatasource" v-if="type == 0">编辑连接</a-menu-item>
-              <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库</a-menu-item>
+              <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库
+              </a-menu-item>
               <a-menu-item key="createQuery" v-if="type == 4">新建查询</a-menu-item>
-              <a-menu-item key="openTerminal" v-if="type != 2 &&(type != 0 || children.length >0)">打开命令行</a-menu-item>
+              <a-menu-item key="openTerminal" v-if="type != 2 &&(type != 0 || children.length >0)">打开命令行
+              </a-menu-item>
               <a-menu-item key="rename" v-if="type == 2 || type == 0">重命名</a-menu-item>
-              <a-menu-item key="delete" v-if="type !=3 && type !=4" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">
+              <a-menu-item key="delete" v-if="type !=3 && type !=4" :disabled="type == -1"
+                           :style="{color: type==-1?'lightgray':'lightcoral'}">
                 删除
               </a-menu-item>
               <a-menu-item key="reload" v-if="children.length >0">刷新</a-menu-item>
@@ -86,12 +90,13 @@ import TableSmall from '@/assets/table-small.svg'
 import QuerySmall from "@/assets/query-small.svg"
 import {message, Modal} from "ant-design-vue";
 import CreateDatabaseModal from "@/view/leftTree/CreateDatabaseModal.vue";
-import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
 
 import throttle from 'lodash/throttle';
 import {useShowObjStore} from "@/store/showObjStore";
 import {generateUUID} from "@/ts/interfaces";
 import {deleteQuery} from "@/view/table/tableAboutApi";
+import {reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
+import {openQuery, openTableData} from "@/view/common/commonFunc";
 
 
 onMounted(async () => {
@@ -114,14 +119,13 @@ const openAddDatabase = ref(false)
 const createDataBaseDs = ref("")
 const datasourceSelectedKeys: any = ref([])
 const datasourceExpandKeys: any = ref([])
-const datasourceTreeData: any = ref([])
 
 const editTitle = ref('')
 const editInput = ref()
 const editingKey = ref<string | null>(null);
 
 const showObjStore = useShowObjStore()
-const emit = defineEmits(["openTerminal","openTableData","openNewQuery","updateTabListWhenDatasourceClosed","updateTabListWhenDatabaseClosed","openQuery"])
+const emit = defineEmits(["openTerminal", "openNewQuery", "updateTabListWhenDatasourceClosed", "updateTabListWhenDatabaseClosed"])
 
 let clickTimeout: number | null = null;
 
@@ -202,10 +206,10 @@ async function handleDoubleClick(e, node) {
       }
       break
     case 2:
-      emit("openTableData",node.datasourceName,node.parentId, node.title)
+      openTableData(node.datasourceName, node.parentId, node.title)
       break
     case 5:
-      emit("openQuery",node.datasourceName,node.parentId, node.title,node.queryText)
+      openQuery(node.datasourceName, node.parentId, node.title, node.queryText)
       break
   }
   if (!datasourceExpandKeys.value.includes(node.key)) {
@@ -220,18 +224,18 @@ async function reloadDataSourceList() {
   let data: any = await getAllDataSource({user: useGlobalStore().loginUser});
   const dataMap = new Map(data.result.map(item => [item.datasourceName, item]));
 
-  datasourceTreeData.value.forEach((item, index) => {
+  showObjStore.datasourceTreeData.forEach((item, index) => {
     if (!dataMap.has(item.datasourceName)) {
-      datasourceTreeData.value.splice(index, 1);
+      showObjStore.datasourceTreeData.splice(index, 1);
     }
   });
   data.result.forEach(item => {
-    if (!datasourceTreeData.value.some(ds => ds.datasourceName === item.datasourceName)) {
-      datasourceTreeData.value.push(item);
+    if (!showObjStore.datasourceTreeData.some(ds => ds.datasourceName === item.datasourceName)) {
+      showObjStore.datasourceTreeData.push(item);
     }
   });
   let tempMap = new Map()
-  datasourceTreeData.value.forEach((item: any) => {
+  showObjStore.datasourceTreeData.forEach((item: any) => {
     if (showObjStore.treeDataMap.has(item.title)) {
       tempMap.set(item.title, showObjStore.treeDataMap.get(item.title))
     } else {
@@ -242,28 +246,8 @@ async function reloadDataSourceList() {
 }
 
 async function editReloadDataSourceList(title: string) {
-  datasourceTreeData.value = datasourceTreeData.value.filter((item: any) => item.title != title)
+  showObjStore.datasourceTreeData = showObjStore.datasourceTreeData.filter((item: any) => item.title != title)
   await reloadDataSourceList()
-}
-
-async function reloadDatabase(datasourceName: string) {
-  const data: any = await getAllDataBases({user: useGlobalStore().loginUser, ds: datasourceName})
-  if (data.code == 200) {
-    const dataObject = showObjStore.treeDataMap.get(datasourceName)
-    data.result.forEach(item=>{
-      const databaseItem = dataObject.childMap.get(item.title)
-      if (databaseItem) {
-        item.children = databaseItem.children
-      }
-    })
-    dataObject.data.children = data.result
-
-    let tempChildMap = new Map()
-    data.result.forEach((item) => {
-      tempChildMap.set(item.title, item)
-    })
-    dataObject.childMap = tempChildMap
-  }
 }
 
 async function reloadTableList(datasourceName: string, databaseName: string) {
@@ -276,20 +260,20 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
   if (data.code === 200) {
     const item = getDatabaseObj(datasourceName, databaseName)
     item.children = []
-    const table:any = {
+    const table: any = {
       key: generateUUID(),
       title: '表',
-      type:3,
-      parentId:databaseName,
-      datasourceName:datasourceName,
+      type: 3,
+      parentId: databaseName,
+      datasourceName: datasourceName,
       children: []
     }
-    const query:any = {
+    const query: any = {
       key: generateUUID(),
       title: '查询',
-      type:4,
-      parentId:databaseName,
-      datasourceName:datasourceName,
+      type: 4,
+      parentId: databaseName,
+      datasourceName: datasourceName,
       children: []
     }
     item.children.push(table)
@@ -302,30 +286,30 @@ async function reloadTableList(datasourceName: string, databaseName: string) {
     // 加载 tableTree
     table.children.push(...tableTree)
     // 更新 tableColumn 和其他状态
-    if(showObjStore.tableObjData.has(datasourceName)){
+    if (showObjStore.tableObjData.has(datasourceName)) {
       showObjStore.tableObjData.get(datasourceName).set(databaseName, tableColumn);
-    }else {
-      showObjStore.tableObjData.set(datasourceName,new Map())
+    } else {
+      showObjStore.tableObjData.set(datasourceName, new Map())
       showObjStore.tableObjData.get(datasourceName).set(databaseName, tableColumn)
     }
     //加载查询
     query.children.push(...queryTree)
-    if(showObjStore.queryObjData.has(datasourceName)){
-      showObjStore.queryObjData.get(datasourceName).set(databaseName, queryTree);
-    }else {
-      showObjStore.queryObjData.set(datasourceName,new Map())
+    if (showObjStore.queryObjData.has(datasourceName)) {
+      showObjStore.queryObjData.get(datasourceName).set(databaseName, queryColumn);
+    } else {
+      showObjStore.queryObjData.set(datasourceName, new Map())
       showObjStore.queryObjData.get(datasourceName).set(databaseName, queryColumn)
     }
     //刷新
-    datasourceTreeData.value.push({})
-    datasourceTreeData.value.pop()
+    showObjStore.datasourceTreeData.push({})
+    showObjStore.datasourceTreeData.pop()
     showObjStore.isTableObjDataChanged += 1;
   }
 }
 
 //endregion----
 
-const handleMenuClick = throttle((data: any, key: string,menuKey: string, title: string, type: number) => {
+const handleMenuClick = throttle((data: any, key: string, menuKey: string, title: string, type: number) => {
   dropdown(data, key, menuKey, title, type);
 }, 300);
 
@@ -338,10 +322,10 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
     case 'close':
       if (type == 1) {
         resetDatabaseChildren(data.parentId, title)
-        emit('updateTabListWhenDatabaseClosed',title)
+        emit('updateTabListWhenDatabaseClosed', title)
       } else if (type == 0) {
         resetDatasourceChildren(title)
-        emit('updateTabListWhenDatasourceClosed',title)
+        emit('updateTabListWhenDatasourceClosed', title)
       }
       break
     case 'addDatasource':
@@ -368,13 +352,13 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
       }
       break
     case 'createQuery':
-      emit('openNewQuery',data.datasourceName,data.parentId)
+      emit('openNewQuery', data.datasourceName, data.parentId)
       break
     case 'openTerminal':
       if (type == 0) {
-        emit('openTerminal',title)
+        emit('openTerminal', title)
       } else if (type == 1) {
-        emit('openTerminal',data.parentId)
+        emit('openTerminal', data.parentId)
       }
 
       break
@@ -393,10 +377,17 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
 
 
     case 'reload':
-      if (type == 0) {
-        await reloadDatabase(title)
-      } else if (type == 1) {
-        await reloadTableList(data.parentId, title)
+      switch (type) {
+        case 0:
+          await reloadDatabase(title)
+          break
+        case 1:
+          await reloadTableList(data.parentId, title)
+          break
+        case 4:
+          await reloadQuery(data.datasourceName, data.parentId)
+          break
+
       }
       break
   }
@@ -427,8 +418,8 @@ async function submitEdit(data) {
   editingKey.value = null
 }
 
-function deleteTreeNode(data: any, key: string, menuKey: string, title: string, type: number){
-  switch (type){
+function deleteTreeNode(data: any, key: string, menuKey: string, title: string, type: number) {
+  switch (type) {
     case 0:
       Modal.confirm({
         title: h('div', [
@@ -446,8 +437,8 @@ function deleteTreeNode(data: any, key: string, menuKey: string, title: string, 
         cancelText: '取消',
         async onOk() {
           const result: any = await deleteDataSource({
-            user:globalStore.loginUser,
-            name:title
+            user: globalStore.loginUser,
+            name: title
           })
           if (result.code == 200) {
             message.success("删除成功")
@@ -466,7 +457,7 @@ function deleteTreeNode(data: any, key: string, menuKey: string, title: string, 
         ]),
         icon: h(ExclamationCircleOutlined),
         content: h('div', [
-          '删除数据库将会删除其下',h('span', {style: {color: 'red', fontWeight: 'bold'}}, '所有数据'),'且',
+          '删除数据库将会删除其下', h('span', {style: {color: 'red', fontWeight: 'bold'}}, '所有数据'), '且',
           h('span', {style: {color: 'red', fontWeight: 'bold'}}, '后果不可逆'),
           '，是否继续?'
         ]),
@@ -510,7 +501,7 @@ function deleteTreeNode(data: any, key: string, menuKey: string, title: string, 
           if (result.code == 200) {
             message.success("删除成功")
           }
-          await reloadTableList(data.datasourceName,data.parentId)
+          await reloadTableList(data.datasourceName, data.parentId)
         },
         onCancel() {
         },
@@ -529,29 +520,29 @@ function getDatabaseObj(parentTitle: string, title: string) {
 
 function setDatabaseChildren(parentTitle: string, title: string, data: any) {
   getDatabaseObj(parentTitle, title).children = data
-  datasourceTreeData.value.push({})
-  datasourceTreeData.value.pop()
+  showObjStore.datasourceTreeData.push({})
+  showObjStore.datasourceTreeData.pop()
 }
 
 function resetDatasourceChildren(title: string) {
   getDatasourceObj(title).data.children = []
   getDatasourceObj(title).childMap = new Map()
-  showObjStore.tableObjData.set(title,new Map())
-  if (showObjStore.currentSelectedDatasource == title){
+  showObjStore.tableObjData.set(title, new Map())
+  if (showObjStore.currentSelectedDatasource == title) {
     showObjStore.isTableObjDataChanged += 1
   }
 }
 
 function resetDatabaseChildren(parentTitle: string, title: string) {
   getDatabaseObj(parentTitle, title).children = []
-  if(showObjStore.tableObjData.has(parentTitle)){
-    showObjStore.tableObjData.get(parentTitle).set(title,[])
+  if (showObjStore.tableObjData.has(parentTitle)) {
+    showObjStore.tableObjData.get(parentTitle).set(title, [])
   }
-  if (showObjStore.currentSelectedDatabase == title){
+  if (showObjStore.currentSelectedDatabase == title) {
     showObjStore.isTableObjDataChanged += 1
   }
-  datasourceTreeData.value.push({})
-  datasourceTreeData.value.pop()
+  showObjStore.datasourceTreeData.push({})
+  showObjStore.datasourceTreeData.pop()
 }
 
 //endregion

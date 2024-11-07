@@ -4,6 +4,7 @@ export const TableObjectColumn = [
         title: '序号',
         width: 60,
         fixed: "left",
+        ellipsis: true,
         resizable: true,
     },
     {
@@ -11,6 +12,7 @@ export const TableObjectColumn = [
         key: 'tableName',
         title: '名',
         width: 300,
+        ellipsis: true,
         resizable: true,
     },
     {
@@ -18,14 +20,15 @@ export const TableObjectColumn = [
         key: 'tableComment',
         title: '注释',
         width: 300,
+        ellipsis: true,
         resizable: true,
     },
     {
         dataIndex: 'dataLength',
         key: 'dataLength',
         title: '数据长度',
-        customRender: ({text, record, index}) => `${text + 'KB'}`,
         width: 100,
+        ellipsis: true,
         resizable: true,
     },
     {
@@ -33,6 +36,7 @@ export const TableObjectColumn = [
         key: 'engine',
         title: '引擎',
         width: 80,
+        ellipsis: true,
         resizable: true,
     },
     {
@@ -40,6 +44,7 @@ export const TableObjectColumn = [
         key: 'tableRows',
         title: '行数',
         width: 60,
+        ellipsis: true,
         resizable: true,
     },
     {
@@ -47,11 +52,13 @@ export const TableObjectColumn = [
         key: 'createTime',
         title: '创建时间',
         width: 180,
+        ellipsis: true,
         resizable: true,
     },
     {
         dataIndex: 'editTime',
         key: 'editTime',
+        ellipsis: true,
         title: '修改日期',
     },
 
@@ -63,11 +70,13 @@ export const QueryObjectColumns = [
         title: '序号',
         width: 60,
         fixed: "left",
+        ellipsis: true,
         resizable: true,
     },
     {
         dataIndex: 'queryName',
         key: 'queryName',
+        ellipsis: true,
         title: '名称',
     }
 ]

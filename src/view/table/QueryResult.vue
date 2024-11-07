@@ -20,7 +20,7 @@
               <span v-if="pane.affectedNum">共影响 {{ pane.affectedNum }} 行</span>
             </a-row>
             <a-row>
-              <span v-if="pane.data.length==0">没有查到数据</span>
+              <span v-if="!pane.affectedNum && pane.data.length==0">没有查到数据</span>
             </a-row>
           </a-col>
           <div style="display:flex;width: 100%;">
