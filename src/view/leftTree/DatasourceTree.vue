@@ -34,20 +34,20 @@
           <template #overlay>
             <a-menu @click="({ key: menuKey }) => handleMenuClick(data,key, menuKey,title,type)">
               <a-menu-item key="open" v-if="children.length ==0 && (type !=3 &&type!=4)">打开</a-menu-item>
-              <a-menu-item key="close" v-if="type != 2&&children.length >0 &&(type !=3 &&type!=4)">关闭连接
-              </a-menu-item>
+              <a-menu-item key="close" v-if="type != 2&&children.length >0 &&(type !=3 &&type!=4)">关闭连接</a-menu-item>
               <a-menu-item key="addDatasource" v-if="type == 0">新建连接</a-menu-item>
               <a-menu-item key="editDatasource" v-if="type == 0">编辑连接</a-menu-item>
-              <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库
-              </a-menu-item>
+              <a-menu-item key="createDatabase" v-if="type == 1 || (type == 0&&children.length >0)">新建数据库</a-menu-item>
               <a-menu-item key="createQuery" v-if="type == 4">新建查询</a-menu-item>
-              <a-menu-item key="openTerminal" v-if="type != 2 &&(type != 0 || children.length >0)">打开命令行
-              </a-menu-item>
+              <a-sub-menu key="dumpSQL" title="转储 SQL 文件">
+                <a-menu-item key="aaa">3rd menu item</a-menu-item>
+                <a-menu-item>4th menu item</a-menu-item>
+              </a-sub-menu>
+              <a-menu-item key="openGenerate" >打开代码生成页面</a-menu-item>
+              <a-menu-item key="openTerminal" v-if="type != 2 &&(type != 0 || children.length >0)">打开命令行</a-menu-item>
               <a-menu-item key="rename" v-if="type == 2 || type == 0">重命名</a-menu-item>
               <a-menu-item key="delete" v-if="type !=3 && type !=4" :disabled="type == -1"
-                           :style="{color: type==-1?'lightgray':'lightcoral'}">
-                删除
-              </a-menu-item>
+                           :style="{color: type==-1?'lightgray':'lightcoral'}">删除</a-menu-item>
               <a-menu-item key="reload" v-if="children.length >0">刷新</a-menu-item>
             </a-menu>
           </template>
@@ -70,11 +70,9 @@
 </template>
 
 <script setup lang="ts">
-import {h, nextTick, onMounted, onUpdated, reactive, ref, watch} from "vue";
+import {h, nextTick, onMounted, reactive, ref, watch} from "vue";
 import {
   deleteDatabase, deleteDataSource,
-  deleteFolder,
-  getAllDataBases,
   getAllDataSource,
   getAllTableList,
   renameDataSource
@@ -96,7 +94,7 @@ import {useShowObjStore} from "@/store/showObjStore";
 import {generateUUID} from "@/ts/interfaces";
 import {deleteQuery} from "@/view/table/tableAboutApi";
 import {reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
-import {openQuery, openTableData} from "@/view/common/commonFunc";
+import {openGenerate, openQuery, openTableData} from "@/view/common/commonFunc";
 
 
 onMounted(async () => {
@@ -316,6 +314,9 @@ const handleMenuClick = throttle((data: any, key: string, menuKey: string, title
 async function dropdown(data: any, key: string, menuKey: string, title: string, type: number) {
   console.log(data)
   switch (menuKey) {
+    case 'aaa':
+      console.log('aaaaa')
+          break
     case 'open':
       await handleDoubleClick(null, data)
       break
@@ -354,13 +355,15 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
     case 'createQuery':
       emit('openNewQuery', data.datasourceName, data.parentId)
       break
+    case 'openGenerate':
+      openGenerate()
+      break
     case 'openTerminal':
       if (type == 0) {
         emit('openTerminal', title)
       } else if (type == 1) {
         emit('openTerminal', data.parentId)
       }
-
       break
     case 'delete':
       deleteTreeNode(data, key, menuKey, title, type)
@@ -374,8 +377,6 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
         }
       });
       break
-
-
     case 'reload':
       switch (type) {
         case 0:

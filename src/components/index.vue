@@ -23,9 +23,9 @@
 
       <div v-if="isResizing" class="resize-line sider" :style="{ transform: `translateX(${resizerPosition}px)` }"></div>
       <div v-if="isResizing" class="overlay"></div>
-      <a-layout-content class="sider" style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;overflow: auto">
+      <a-layout-content class="sider" style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;">
         <a-tabs v-model:activeKey="showObjStore.activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}" @edit="onEdit">
-          <a-tab-pane v-for="pane in showObjStore.panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%">
+          <a-tab-pane v-for="pane in showObjStore.panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%;overflow: auto">
             <component :is="pane.component" v-bind="pane.props"/>
           </a-tab-pane>
         </a-tabs>

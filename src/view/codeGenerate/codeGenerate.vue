@@ -1,195 +1,224 @@
 <template>
-  <a-row style="margin: 15px 0 15px 0;" type="flex" justify="space-between">
-    <a-col>
-      <a-space>
-        <a-button type="primary" @click="selectAll">全选</a-button>
-        <a-button type="primary" @click="()=>{openTempRep = true}">模板库</a-button>
-        <a-button type="primary" @click="()=>{openEditTemp = true}">编辑模板</a-button>
-      </a-space>
-    </a-col>
-    <a-col>
-      <a-space>
-        <a-form layout="inline" autocomplete="off">
-          <a-space>
-            <a-form-item label="表名" name="tableName">
-              <a-input style="width: 140px;" v-model:value="searchForm.tableName" :allowClear="true"/>
-            </a-form-item>
-            <a-form-item label="备注" name="des">
-              <a-input style="width: 140px;" v-model:value="searchForm.des" :allowClear="true"/>
-            </a-form-item>
-          </a-space>
-        </a-form>
-        <a-button type="primary" @click="search">
-          <SearchOutlined/>
-          搜索
-        </a-button>
-        <a-button type="primary" @click="reload">
-          <ReloadOutlined/>
-        </a-button>
-      </a-space>
-    </a-col>
-  </a-row>
-  <a-table :columns="columns" :data-source="tableData" :pagination="pagination"
-           :row-selection="rowSelection" style="min-height: 500px">
-    <template #bodyCell="{ column, record,index }">
-      <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
-    </template>
-  </a-table>
-
-
-  <a-input :value="selectedRowKeys.join(' , ')"/>
-  <a-form
-      style="margin-left: 0px;padding-top: 20px"
-      ref="form"
-      :model="generateForm"
-      name="basic"
-      :label-col="{ span: 8 }"
-      :wrapper-col="{ span: 40 }"
-      autocomplete="off"
-  >
-    <a-row class="bold-text">
+  <div>
+    <a-row style="margin: 15px 0 15px 0;" type="flex" justify="space-between">
       <a-col>
-        <a-form-item label="model" name="model"
-                     :rules="[{ required: true, message: '需要model!',trigger: 'blur' }]"
-        >
-          <a-input v-model:value="generateForm.model"></a-input>
-        </a-form-item>
+        <a-space>
+          <a-button type="primary" @click="selectAll">全选</a-button>
+          <a-button type="primary" @click="()=>{openTempRep = true}">模板库</a-button>
+          <a-button type="primary" @click="()=>{openEditTemp = true}">编辑模板</a-button>
+        </a-space>
       </a-col>
       <a-col>
-        <a-form-item label="package" name="packageName"
-                     :rules="[{ required: true, message: '需要package!',trigger: 'blur' }]"
-        >
-          <a-input v-model:value="generateForm.packageName"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col>
-        <a-form-item label="作者" name="author"
-                     :rules="[{ required: true, message: '需要author!',trigger: 'blur' }]"
-        >
-          <a-input v-model:value="generateForm.author"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col style="padding-left: 30px">
-        <a-form-item label="去除表前缀" name="tablePrefix">
-          <a-input v-model:value="generateForm.tablePrefix"></a-input>
-        </a-form-item>
+        <a-space>
+          <a-form layout="inline" autocomplete="off">
+            <a-space>
+              <a-form-item label="表名" name="tableName">
+                <a-input style="width: 140px;" v-model:value="searchForm.tableName" :allowClear="true"/>
+              </a-form-item>
+              <a-form-item label="备注" name="des">
+                <a-input style="width: 140px;" v-model:value="searchForm.des" :allowClear="true"/>
+              </a-form-item>
+            </a-space>
+          </a-form>
+          <a-button type="primary" @click="search">
+            <SearchOutlined/>
+            搜索
+          </a-button>
+          <a-button type="primary" @click="reload">
+            <ReloadOutlined/>
+          </a-button>
+        </a-space>
       </a-col>
     </a-row>
-    <a-row class="bold-text">
-      <a-col>
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needEntity">Entity</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-input class="generate-input" v-model:value="generateForm.entityFilePathName"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col>
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needMapper">Mapper</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-input class="generate-input" v-model:value="generateForm.mapperFilePathName"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col>
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needController">Controller</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-input class="generate-input" v-model:value="generateForm.controllerFilePathName"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col>
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needService">Service</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-input class="generate-input" v-model:value="generateForm.serviceFilePathName"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col>
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needServiceImpl">ServiceImpl</a-checkbox>
-          <a-input class="generate-input" v-model:value="generateForm.serviceImplFilePathName"></a-input>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <!--                <a-form-item>
+    <a-table :columns="columns" :data-source="tableData" :pagination="pagination" @resizeColumn="handleResizeColumn"
+             :row-selection="rowSelection" row-key="id" style="min-height: 500px">
+      <template #bodyCell="{ column, record,index }">
+        <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
+      </template>
+    </a-table>
 
-                        </a-form-item>-->
-      </a-col>
-    </a-row>
-    <a-row class="bold-text">
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needLombok">Lombok</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needChainModel">
-            <a-tooltip>
-              <template #title>实体类set方法返回自身</template>
-              ChainModel
-            </a-tooltip>
-          </a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needRestController">RestController</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needMapperAnno">@Mapper</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needSwagger">Swagger</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col">
-        <a-form-item>
-          <a-checkbox v-model:checked="generateForm.needSpringDoc">SpringDoc</a-checkbox>
-        </a-form-item>
-      </a-col>
-      <a-col class="generate-col" style="position: absolute;right: 5%">
-        <a-form-item>
-          <a-button type="primary" @click="generateSubmit">生成</a-button>
-        </a-form-item>
-      </a-col>
-    </a-row>
-  </a-form>
-  <CodeMirrorModal v-model:open="openEditTemp"/>
-  <TempRepositoryModal v-model:open="openTempRep"/>
+
+    <a-input :value="selectedRowKeys.join(' , ')"/>
+    <a-form
+        style="margin-left: 0px;padding-top: 20px"
+        ref="form"
+        :model="generateForm"
+        name="basic"
+        :label-col="{ span: 8 }"
+        :wrapper-col="{ span: 40 }"
+        autocomplete="off"
+    >
+      <a-row class="bold-text">
+        <a-col>
+          <a-form-item label="model" name="model"
+                       :rules="[{ required: true, message: '需要model!',trigger: 'blur' }]"
+          >
+            <a-input v-model:value="generateForm.model"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item label="package" name="packageName"
+                       :rules="[{ required: true, message: '需要package!',trigger: 'blur' }]"
+          >
+            <a-input v-model:value="generateForm.packageName"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item label="作者" name="author"
+                       :rules="[{ required: true, message: '需要author!',trigger: 'blur' }]"
+          >
+            <a-input v-model:value="generateForm.author"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col style="padding-left: 30px">
+          <a-form-item label="去除表前缀" name="tablePrefix">
+            <a-input v-model:value="generateForm.tablePrefix"></a-input>
+          </a-form-item>
+        </a-col>
+      </a-row>
+      <a-row class="bold-text">
+        <a-col>
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needEntity">Entity</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-input class="generate-input" v-model:value="generateForm.entityFilePathName"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needMapper">Mapper</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-input class="generate-input" v-model:value="generateForm.mapperFilePathName"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needController">Controller</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-input class="generate-input" v-model:value="generateForm.controllerFilePathName"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needService">Service</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-input class="generate-input" v-model:value="generateForm.serviceFilePathName"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col>
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needServiceImpl">ServiceImpl</a-checkbox>
+            <a-input class="generate-input" v-model:value="generateForm.serviceImplFilePathName"></a-input>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <!--                <a-form-item>
+
+                          </a-form-item>-->
+        </a-col>
+      </a-row>
+      <a-row class="bold-text">
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needLombok">Lombok</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needChainModel">
+              <a-tooltip>
+                <template #title>实体类set方法返回自身</template>
+                ChainModel
+              </a-tooltip>
+            </a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needRestController">RestController</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needMapperAnno">@Mapper</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needSwagger">Swagger</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col">
+          <a-form-item>
+            <a-checkbox v-model:checked="generateForm.needSpringDoc">SpringDoc</a-checkbox>
+          </a-form-item>
+        </a-col>
+        <a-col class="generate-col" style="position: absolute;right: 5%">
+          <a-form-item>
+            <a-button type="primary" @click="generateSubmit">生成</a-button>
+          </a-form-item>
+        </a-col>
+      </a-row>
+    </a-form>
+    <CodeMirrorModal v-model:open="openEditTemp"/>
+    <TempRepositoryModal v-model:open="openTempRep"/>
+  </div>
 </template>
 
 <script setup lang="ts">
-import {columns, createRowSelection, generateFormData, isNotBlank} from "@/ts/interfaces";
+import {createRowSelection, generateFormData, isNotBlank} from "@/ts/interfaces";
 import {ReloadOutlined, SearchOutlined} from "@ant-design/icons-vue";
-import {reactive, ref, watch} from "vue";
+import {onMounted, reactive, ref, watch} from "vue";
 import {generate, getAllDataSource, getAllTableList} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {message} from "ant-design-vue";
 import CodeMirrorModal from "@/components/CodeMirrorModal.vue";
 import TempRepositoryModal from "@/components/TempRepositoryModal.vue";
+import {useShowObjStore} from "@/store/showObjStore";
+import {columns} from "@/view/codeGenerate/codeGenerate";
+
+const showObjStore = useShowObjStore()
+
+onMounted(()=>{
+  reloadTable()
+})
+
+watch(()=>showObjStore.currentSelectedDatabase,(value)=>{
+  reloadTable()
+})
+
+watch(()=>showObjStore.tableObjData,(value)=>{
+  reloadTable()
+},{deep:true})
+
+function reloadTable(){
+  rowSelection.value.selectedRowKeys = []
+  rowSelection.value.selectedRow = []
+  pagination.current = 1
+  const currentSelectedDatasource = showObjStore.currentSelectedDatasource
+  const currentSelectedDatabase = showObjStore.currentSelectedDatabase
+  const datasourceMap = showObjStore.tableObjData.get(currentSelectedDatasource)
+  if(datasourceMap){
+    tableData.value = datasourceMap.get(currentSelectedDatabase)?datasourceMap.get(currentSelectedDatabase):[]
+  }
+}
 
 const currentName = ref<string>('')
 const subItems: any = ref([])
 const openEditTemp = ref<boolean>(false);
 const openTempRep = ref<boolean>(false);
-const globalStore =  useGlobalStore()
 
 const generateForm = reactive<generateFormData>({
   model: '',
@@ -219,7 +248,6 @@ const allTableData: any = ref<[]>([])
 
 const pagination = reactive({
   current: 1,
-
   pageSize: 10,
   showTotal: total => `共 ${total} 条`,
   total: 0,
@@ -273,6 +301,7 @@ async function click(name: string) {
   rowSelection.value.selectedRowKeys = []
   rowSelection.value.selectedRow = []
   currentName.value = name
+  pagination.current = 1
   const data:any = await getAllTableList({user: useGlobalStore().loginUser, ds: name})
   tableData.value = data.result.tableTree
   tableData.value.forEach(i => {
@@ -308,7 +337,8 @@ async function generateSubmit() {
   }
   const param: any = generateForm
   param.user = useGlobalStore().loginUser
-  param.name = currentName.value
+  param.datasourceName = showObjStore.currentSelectedDatasource
+  param.databaseName = showObjStore.currentSelectedDatabase
   param.tableNameList = selectedRowKeys.value
   generate(param).then(response => {
     /*console.log(response)
@@ -344,6 +374,10 @@ async function reloadDataSourceList() {
   subItems.value = a.result
 }
 
+function handleResizeColumn(w, col) {
+  col.width = w;
+}
+
 </script>
 
 <style scoped>
@@ -358,6 +392,7 @@ async function reloadDataSourceList() {
 }
 
 .bold-text {
+  position: relative;
   font-weight: bold;
 }
 

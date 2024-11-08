@@ -72,8 +72,5 @@ export const reloadQuery = async (datasourceName: string,databaseName: string) =
                 })
             }
         }
-
-
-
     }
 }

@@ -34,7 +34,7 @@
 <script setup lang="ts">
 
 import {QueryObjectColumns, TableObjectColumn} from "@/view/common/ShowObject";
-import {onMounted, onUpdated, reactive, ref, watch} from "vue";
+import {onBeforeUnmount, onMounted, onUpdated, reactive, ref, watch} from "vue";
 import {useShowObjStore} from "@/store/showObjStore";
 import TableSmall from "@/assets/table-small.svg";
 import QuerySmall from "@/assets/query-small.svg";
@@ -49,6 +49,10 @@ onMounted(() => {
     tableHeight.value = (parentHeight ? parentHeight : 1000) * 0.8;
   }
 });
+
+onBeforeUnmount(()=>{
+  document.removeEventListener('click', handleClickOutside);
+})
 
 function handleClickOutside(event) {
   // 检查点击是否发生在菜单外部
@@ -169,5 +173,9 @@ function handleResizeColumn(w, col) {
 }
 .menu{
 
+}
+:deep(.ant-table-cell){
+  padding: 5px !important;
+  font-size: 12px;
 }
 </style>
