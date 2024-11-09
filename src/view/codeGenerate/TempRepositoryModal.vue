@@ -1,7 +1,8 @@
 <template>
   <a-modal :open="props.open" title="模板资源库" @cancel="emit('update:open',false)"
            style="top: 20px; padding: 0; max-height: 100vh; width: 80% ">
-    <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange" :bodyStyle="{ padding: '10px 0 0 0' }"
+    <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange"
+            :bodyStyle="{ padding: '10px 0 0 0' ,height: 'calc(100vh - 208px)' }"
             style="height: calc(100vh - 150px);overflow: auto; ">
       <template #tabBarExtraContent>
         <a-space>
@@ -55,22 +56,25 @@
             </template>
           </a-tree>
         </a-layout-sider>
-        <a-layout-content
-            style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto">
-          <a-list :grid="{ gutter: 2, xs: 1, sm: 2, md: 4, lg: 4, xl: 10, xxl: 10 }" :data-source="data">
+        <a-layout-content style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto;background: white"
+                          @click="()=>{selectedRowKeys = [];selectedRowKeysSet.clear();selectedRow = []}">
+          <a-list ref="list" :grid="{ gutter: 20, xs: 1, sm: 1, md: 1, lg: 2, xl: 4, xxl: xxlNum }" :data-source="data">
             <template #renderItem="{ item }">
               <a-list-item>
                 <a-list-item-meta>
                   <template #title>
-                    <div class="file-item">
+                    <div class="file-item" :style="{ backgroundColor: selectedRowKeysSet.has(item.id) ? '#b7deff' : 'white',
+                       border: selectedRowKeysSet.has(item.id) ? '1px solid #1890ff' : '0px solid #e8e8e8',
+                       borderRadius: '7px'}" @click.stop="clickTree(item)"
+                    >
                       <a-col>
-                        <a-row class="icon-row">
-                          <Idea v-if="item.type == '1'"/>
-                          <FolderWithFiles v-else-if="item.type == '0'"/>
-
+                        <a-row class="icon-row" >
+                          <Idea v-if="!item.folderName"/>
+                          <Folder v-else-if="item.fileNum == 0"/>
+                          <FolderWithFiles v-else/>
                         </a-row>
                         <a-row class="text-row">
-                          <span>{{ item.title }}</span>
+                          <span>{{ item.folderName?item.folderName:item.fileName }}</span>
                         </a-row>
                       </a-col>
                     </div>
@@ -86,7 +90,7 @@
 </template>
 <script setup lang="ts">
 import {tabKeyToValueMap, tabList} from "@/ts/interfaces";
-import {onMounted, ref, h, nextTick} from "vue";
+import {onMounted, ref, h, nextTick, onBeforeUnmount, watch, onUpdated} from "vue";
 import {deleteFolder, editFolderName, getFolderTree, getTempFileList, uploadTempFile} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import Icon, {ReloadOutlined, UploadOutlined, ExclamationCircleOutlined, FolderOutlined} from "@ant-design/icons-vue";
@@ -106,26 +110,50 @@ const fileList: any = ref()
 const realFileList: any = ref([])
 const filePathSelectedKeys: any = ref([])
 const filePathExpandKeys: any = ref([])
-const data = ref([
-  {
-    type: '0',
-    fileName: '测试',
-    id: '',
-    title: '这是一'
-  },
-  {
-    type: '1',
-    fileName: '测试',
-    id: '',
-    title: '这是一'
-  }
-])
+const data = ref([])
+const dataMap = ref(new Map())
+const list = ref()
+const xxlNum = ref(6)
 const filePathTree: any = ref([])
+const selectedRowKeys: any = ref([])
+const selectedRowKeysSet: any = ref(new Set())
+const selectedRow: any = ref([])
 
+function clickTree(item) {
+  selectedRowKeys.value = []
+  selectedRowKeys.value.push(item.id)
+  selectedRowKeysSet.value = new Set(selectedRowKeys.value)
+}
+let resizeObserver:ResizeObserver|null
 onMounted(async () => {
-  await getTempFileList({username: globalStore.loginUser, fileType: tabKeyToValueMap.get(key.value)});
+
   const folderData: any = await getFolderTree({username: globalStore.loginUser})
+  await reloadFile(globalStore.loginUser, tabKeyToValueMap.get(key.value),'');
   filePathTree.value = folderData.result
+})
+
+async function reloadFile(username:string,fileType:number|undefined,nodeId:string){
+  const fileDate:any = await getTempFileList({username: username, fileType: fileType,nodeId:nodeId});
+  data.value = fileDate.result
+  data.value.forEach((item:any) => {
+    dataMap.value.set(item.id, item)
+  })
+}
+
+onUpdated(()=>{
+  if (resizeObserver){
+    resizeObserver.disconnect();
+    resizeObserver = null
+  }else {
+    if (list.value) {
+      resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          xxlNum.value = Math.floor(entry.contentRect.width / 140)
+        }
+      });
+      resizeObserver.observe(list.value.$el);
+    }
+  }
 })
 
 let count = 0
@@ -168,9 +196,10 @@ function selectTree(keys, e) {
   }
   filePathSelectedKeys.value = [e.node.key]
   // 设置一个新的定时器
-  clickTimeout = window.setTimeout(() => {
-    filePathSelectedKeys.value = [e.node.key]
-    console.log(filePathSelectedKeys.value)
+  clickTimeout = window.setTimeout(async () => {
+    console.log(e.node.which)
+    console.log(tabKeyToValueMap)
+    await reloadFile(globalStore.loginUser, e.node.which,e.node.type == -1?'':e.node.key);
   }, 300);
 
 }
@@ -180,15 +209,16 @@ function handleDoubleClick(e, node) {
     clearTimeout(clickTimeout);
   }
   console.log("双击")
+  console.log(filePathExpandKeys.value)
   if (!filePathExpandKeys.value.includes(node.key)) {
-    filePathExpandKeys.value.push(node.key)
+    filePathExpandKeys.value = [...filePathExpandKeys.value,node.key]
   } else {
     filePathExpandKeys.value = filePathExpandKeys.value.filter(v => v !== node.key)
   }
 }
 
 
-function onContextMenuClick(treeKey, menuKey, title,type) {
+function onContextMenuClick(treeKey, menuKey, title, type) {
   console.log(treeKey)
   console.log(data)
   switch (menuKey) {
@@ -212,8 +242,8 @@ function onContextMenuClick(treeKey, menuKey, title,type) {
         okType: 'danger',
         cancelText: '取消',
         async onOk() {
-          await deleteFolder({id:treeKey})
-          deleteTreeDataNode(treeKey,filePathTree.value)
+          await deleteFolder({id: treeKey})
+          deleteTreeDataNode(treeKey, filePathTree.value)
         },
         onCancel() {
           console.log('Cancel');
@@ -223,13 +253,13 @@ function onContextMenuClick(treeKey, menuKey, title,type) {
   }
 }
 
-function deleteTreeDataNode(treeKey,treeData){
-  if(treeData == undefined){
+function deleteTreeDataNode(treeKey, treeData) {
+  if (treeData == undefined) {
     return
   }
   let index = -1
   for (let i = 0; i < treeData.length; i++) {
-    if(treeData[i].key == treeKey){
+    if (treeData[i].key == treeKey) {
       index = i
       break
     }
@@ -240,7 +270,7 @@ function deleteTreeDataNode(treeKey,treeData){
   }
   treeData.forEach(item => {
     console.log(item)
-    deleteTreeDataNode(treeKey,item.children)
+    deleteTreeDataNode(treeKey, item.children)
   })
 }
 
@@ -267,6 +297,7 @@ async function submitEdit(data) {
 :deep(.anticon) {
   transform: translateY(4px);
 }
+
 .file-item {
   width: 140px; /* 设置合适的宽度 */
   display: flex;
@@ -286,7 +317,6 @@ async function submitEdit(data) {
 .text-row {
   display: flex;
   justify-content: center;
-  align-items: center;
   height: 60px; /* 设置文字容器的高度 */
 }
 
@@ -300,5 +330,11 @@ async function submitEdit(data) {
   text-overflow: ellipsis;
   white-space: normal;
   word-break: break-word; /* 允许单词在行尾断开 */
+}
+
+:deep(.splitpanes__splitter) {
+  background-color: black; /* 分隔条的颜色 */
+  min-width: 5px !important; /* 分隔条的宽度 */
+
 }
 </style>

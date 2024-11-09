@@ -6,6 +6,7 @@
           <a-button type="primary" @click="selectAll">全选</a-button>
           <a-button type="primary" @click="()=>{openTempRep = true}">模板库</a-button>
           <a-button type="primary" @click="()=>{openEditTemp = true}">编辑模板</a-button>
+          <a-button type="primary" @click="">设置模板</a-button>
         </a-space>
       </a-col>
       <a-col>
@@ -185,7 +186,7 @@ import {generate, getAllDataSource, getAllTableList} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {message} from "ant-design-vue";
 import CodeMirrorModal from "@/components/CodeMirrorModal.vue";
-import TempRepositoryModal from "@/components/TempRepositoryModal.vue";
+import TempRepositoryModal from "@/view/codeGenerate/TempRepositoryModal.vue";
 import {useShowObjStore} from "@/store/showObjStore";
 import {columns} from "@/view/codeGenerate/codeGenerate";
 
