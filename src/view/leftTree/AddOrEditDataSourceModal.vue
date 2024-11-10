@@ -7,9 +7,10 @@
       <a-button :disabled="formData.datasourceType == null" type="primary" @click="submit">{{ currentStep == 0 ? '下一步' : '确定' }}</a-button>
 
     </template>
-    <a-layout style="width: 100%;height: 100%">
-      <a-layout-sider width="200" style="background: #fff;position: relative;border-right: 1px solid #e8e8e8;">
+    <a-layout style="background: rgba(0,0,0,0);width: 100%;height: 100%">
+      <a-layout-sider width="200" style="background: rgba(0,0,0,0);position: relative;border-right: 1px solid #494949;">
         <a-steps
+            style="padding-top: 10px"
             direction="vertical"
             :current="currentStep"
             :items="stepItems"
@@ -17,7 +18,7 @@
       </a-layout-sider>
       <a-layout-content
           style="padding: 10px 10px 10px 10px;position: relative;height: 500px;width: 100%;overflow: auto;
-          background-color: white"
+          background: rgba(0,0,0,0);"
       >
         <a-list v-show="currentStep==0" :grid="{ gutter: 2, column: 4 }" :data-source="DatasourceTypeListItems">
           <template #renderItem="{ item }">
@@ -26,7 +27,7 @@
                 <template #title>
                   <div
                       class="file-item"
-                      :style="{ backgroundColor: formData.datasourceType == item.type ? '#b7deff' : 'white',
+                      :style="{ backgroundColor: formData.datasourceType == item.type ? '#749ec2' : 'inherit',
                        border: formData.datasourceType === item.type ? '1px solid #1890ff' : '0px solid #e8e8e8',
                        borderRadius: '7px'}"
                       @click="()=>{formData.datasourceType = item.type}"
@@ -242,6 +243,10 @@ function cancel(){
 .icon-form {
   display: flex;
   align-items: center;
+}
+
+:deep(input) {
+  color-scheme: dark !important;
 }
 
 </style>

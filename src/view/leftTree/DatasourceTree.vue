@@ -1,5 +1,5 @@
 <template>
-  <div style="background-color: white;padding-top: 10px;width: 100%;">
+  <div style="padding-top: 10px;width: 100%;">
     <a-tree
         style="font-size: 15px"
         :tree-data="showObjStore.datasourceTreeData"
@@ -189,7 +189,7 @@ async function handleDoubleClick(e, node) {
       if (node.children.length == 0) {
         await reloadDatabase(node.datasourceName)
         if (!datasourceExpandKeys.value.includes(node.key)) {
-          datasourceExpandKeys.value.push(node.key)
+          datasourceExpandKeys.value = [...datasourceExpandKeys.value,node.key]
         }
         return
       }
@@ -198,7 +198,7 @@ async function handleDoubleClick(e, node) {
       if (node.children.length == 0) {
         await reloadTableList(node.parentId, node.title)
         if (!datasourceExpandKeys.value.includes(node.key)) {
-          datasourceExpandKeys.value.push(node.key)
+          datasourceExpandKeys.value = [...datasourceExpandKeys.value,node.key]
         }
         return
       }
@@ -211,7 +211,7 @@ async function handleDoubleClick(e, node) {
       break
   }
   if (!datasourceExpandKeys.value.includes(node.key)) {
-    datasourceExpandKeys.value.push(node.key)
+    datasourceExpandKeys.value = [...datasourceExpandKeys.value,node.key]
   } else {
     datasourceExpandKeys.value = datasourceExpandKeys.value.filter(v => v !== node.key)
   }
@@ -553,6 +553,5 @@ function resetDatabaseChildren(parentTitle: string, title: string) {
 :deep(.anticon) {
   transform: translateY(-2px);
 }
-
 
 </style>

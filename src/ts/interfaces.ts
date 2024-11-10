@@ -91,6 +91,11 @@ export const tabKeyToValueMap = new Map<string, number>([
     ['ServiceImpl', 6],
 ]);
 
+export const ValueToTabKeyMap = new Map<number, string>();
+tabKeyToValueMap.forEach((value, key) => {
+    ValueToTabKeyMap.set(value, key);
+});
+
 export function areCommonPropertiesEqual(obj1: any, obj2: any): boolean {
     // 获取两个对象的共有属性
     const commonKeys = Object.keys(obj1).filter(key => key in obj2);

@@ -3,7 +3,7 @@
            style="top: 20px; padding: 0; max-height: 100vh; width: 80% ">
     <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange"
             :bodyStyle="{ padding: '10px 0 0 0' ,height: 'calc(100vh - 208px)' }"
-            style="height: calc(100vh - 150px);overflow: auto; ">
+            style="height: calc(100vh - 150px);overflow: auto;background: rgba(0,0,0,0); ">
       <template #tabBarExtraContent>
         <a-space>
           <a-upload
@@ -24,81 +24,110 @@
           </a-button>
         </a-space>
       </template>
-      <a-layout style="width: 100%;height: 100%">
-        <a-layout-sider width="250" style="background: #fff;position: relative;">
-          <a-tree
-              style="font-size: 15px"
-              :tree-data="filePathTree"
-              v-model:selectedKeys="filePathSelectedKeys"
-              v-model:expandedKeys="filePathExpandKeys"
-              @select="selectTree"
-              @dblclick="handleDoubleClick"
-              class="custom-tree"
-              block-node
-          >
-            <template #title="{ title, key: treeKey,type,data }">
-              <a-dropdown :trigger="['contextmenu']">
-                <a-space>
-                  <FolderTree style="margin-top: 7px"/>
-                  <span v-if="!editingKey || editingKey !== treeKey">{{ title }}</span>
-                  <a-input ref="editInput" v-else type="text" v-model:value="editTitle" @blur="submitEdit(data)"
-                         @keyup.enter="submitEdit(data)"/>
-                </a-space>
-                <template #overlay>
-                  <a-menu @click="({ key: menuKey }) => onContextMenuClick(treeKey, menuKey,title,type)">
-                    <a-menu-item key="1" :disabled="type == 2" >新建子文件</a-menu-item>
-                    <a-menu-item key="2" :disabled="type == -1">重命名</a-menu-item>
-                    <a-menu-item key="3" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">删除</a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
+      <a-layout style="width: 100%;height: 100%;background-color: rgba(24,24,24,0);">
+        <a-layout-header style="background: rgb(0,0,0,0);">
+          <a-row>
+            <a-button :disabled="backStack.size()==0" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small"
+                      @click="historyBack">
+              <arrow-left-small :style="{color: backStack.size()==0?'darkgray':'white'}"/>
+            </a-button>
+            <a-button :disabled="forwardStack.size()==0" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small" @click="historyForward">
+              <arrow-right-small :style="{color: forwardStack.size()==0?'darkgray':'white'}"/>
+            </a-button>
+            <a-button type="ghost" style="display: flex;align-items: center;justify-content: center" size="small">
+              <arrow-top-small/>
+            </a-button>
+          </a-row>
+        </a-layout-header>
 
-            </template>
-          </a-tree>
-        </a-layout-sider>
-        <a-layout-content style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto;background: white"
-                          @click="()=>{selectedRowKeys = [];selectedRowKeysSet.clear();selectedRow = []}">
-          <a-list ref="list" :grid="{ gutter: 20, xs: 1, sm: 1, md: 1, lg: 2, xl: 4, xxl: xxlNum }" :data-source="data">
-            <template #renderItem="{ item }">
-              <a-list-item>
-                <a-list-item-meta>
-                  <template #title>
-                    <div class="file-item" :style="{ backgroundColor: selectedRowKeysSet.has(item.id) ? '#b7deff' : 'white',
-                       border: selectedRowKeysSet.has(item.id) ? '1px solid #1890ff' : '0px solid #e8e8e8',
-                       borderRadius: '7px'}" @click.stop="clickTree(item)"
-                    >
-                      <a-col>
-                        <a-row class="icon-row" >
-                          <Idea v-if="!item.folderName"/>
-                          <Folder v-else-if="item.fileNum == 0"/>
-                          <FolderWithFiles v-else/>
-                        </a-row>
-                        <a-row class="text-row">
-                          <span>{{ item.folderName?item.folderName:item.fileName }}</span>
-                        </a-row>
-                      </a-col>
-                    </div>
+
+        <a-layout style="width: 100%;height: 100%;background: rgba(0,0,0,0);">
+          <a-layout-sider width="250" style="background-color: rgba(24,24,24,0);position: relative;">
+            <a-tree
+                style="background-color: rgba(24,24,24,0);font-size: 15px;height: 100%;"
+                :tree-data="filePathTree"
+                v-model:selectedKeys="filePathSelectedKeys"
+                v-model:expandedKeys="filePathExpandKeys"
+                @select="selectTree"
+                @dblclick="handleDoubleClick"
+                class="custom-tree"
+                block-node
+            >
+              <template #title="{ title, key: treeKey,type,data }">
+                <a-dropdown :trigger="['contextmenu']">
+                  <a-space>
+                    <FolderTree style="margin-top: 7px"/>
+                    <span v-if="!editingKey || editingKey !== treeKey">{{ title }}</span>
+                    <a-input ref="editInput" v-else type="text" v-model:value="editTitle" @blur="submitEdit(data)"
+                             @keyup.enter="submitEdit(data)"/>
+                  </a-space>
+                  <template #overlay>
+                    <a-menu @click="({ key: menuKey }) => onContextMenuClick(treeKey, menuKey,title,type)">
+                      <a-menu-item key="1" :disabled="type == 2">新建子文件</a-menu-item>
+                      <a-menu-item key="2" :disabled="type == -1">重命名</a-menu-item>
+                      <a-menu-item key="3" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">
+                        删除
+                      </a-menu-item>
+                    </a-menu>
                   </template>
-                </a-list-item-meta>
-              </a-list-item>
-            </template>
-          </a-list>
-        </a-layout-content>
+                </a-dropdown>
+
+              </template>
+            </a-tree>
+          </a-layout-sider>
+          <a-layout-content
+              style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto;background-color: rgba(24,24,24,0)"
+              @click="()=>{selectedRowKeys = [];selectedRowKeysSet.clear();selectedRow = []}">
+            <a-list ref="list" :grid="{ gutter: 20, xs: 1, sm: 1, md: 1, lg: 2, xl: 4, xxl: xxlNum }"
+                    :data-source="data">
+              <template #renderItem="{ item }">
+                <a-list-item>
+                  <a-list-item-meta>
+                    <template #title>
+                      <div class="file-item" :style="{ backgroundColor: selectedRowKeysSet.has(item.id) ? '#749ec2' : 'inherit',
+                       border: selectedRowKeysSet.has(item.id) ? '1px solid #1890ff' : '0px solid #e8e8e8',
+                       borderRadius: '7px'}" @click.stop="clickFileList(item)" @dblclick="dbClickFileList(item)"
+                      >
+                        <a-col>
+                          <a-row class="icon-row">
+                            <Idea v-if="!item.folderName"/>
+                            <Folder v-else-if="item.fileNum == 0"/>
+                            <FolderWithFiles v-else/>
+                          </a-row>
+                          <a-row class="text-row">
+                            <span>{{ item.folderName ? item.folderName : item.fileName }}</span>
+                          </a-row>
+                        </a-col>
+                      </div>
+                    </template>
+                  </a-list-item-meta>
+                </a-list-item>
+              </template>
+            </a-list>
+          </a-layout-content>
+        </a-layout>
       </a-layout>
     </a-card>
   </a-modal>
 </template>
 <script setup lang="ts">
 import {tabKeyToValueMap, tabList} from "@/ts/interfaces";
-import {onMounted, ref, h, nextTick, onBeforeUnmount, watch, onUpdated} from "vue";
+import {onMounted, ref, h, nextTick, onBeforeUnmount, watch, onUpdated, computed, reactive} from "vue";
 import {deleteFolder, editFolderName, getFolderTree, getTempFileList, uploadTempFile} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
-import Icon, {ReloadOutlined, UploadOutlined, ExclamationCircleOutlined, FolderOutlined} from "@ant-design/icons-vue";
+import {ReloadOutlined, UploadOutlined, ExclamationCircleOutlined, ArrowLeftOutlined} from "@ant-design/icons-vue";
 import {message, Modal} from "ant-design-vue";
 import FolderTree from "@/assets/folder_tree.svg"
 import Idea from "@/assets/idea.svg"
 import FolderWithFiles from "@/assets/folder_with_files.svg"
 import Folder from "@/assets/folder.svg"
+import BackSmall from "@/assets/back-small.svg";
+import ReturnSmall from "@/assets/return-small.svg";
+import ArrowLeftSmall from "@/assets/arrow-left-small.svg"
+import ArrowRightSmall from "@/assets/arrow-right-small.svg"
+import ArrowTopSmall from "@/assets/arrow-top-small.svg"
+import {FileStack} from "@/view/common/FileStack";
+import {historyObj} from "@/view/codeGenerate/codeGenerate";
 
 const props = defineProps({open: Boolean});
 const emit = defineEmits(['update:open']);
@@ -109,42 +138,103 @@ const isUploading = ref(false)
 const fileList: any = ref()
 const realFileList: any = ref([])
 const filePathSelectedKeys: any = ref([])
+const filePathSelectedRow: historyObj = ref(null)
 const filePathExpandKeys: any = ref([])
 const data = ref([])
 const dataMap = ref(new Map())
 const list = ref()
 const xxlNum = ref(6)
+
+const backStack = reactive(new FileStack<historyObj>(10));
+const forwardStack = reactive(new FileStack<historyObj>(10));
+
 const filePathTree: any = ref([])
 const selectedRowKeys: any = ref([])
 const selectedRowKeysSet: any = ref(new Set())
 const selectedRow: any = ref([])
 
-function clickTree(item) {
+
+let listClickTimeOut: number | null = null
+
+function clickFileList(item) {
+  if (listClickTimeOut) {
+    clearTimeout(listClickTimeOut)
+  }
   selectedRowKeys.value = []
   selectedRowKeys.value.push(item.id)
   selectedRowKeysSet.value = new Set(selectedRowKeys.value)
+  listClickTimeOut = window.setTimeout(() => {
+    console.log("单击文件触发")
+  }, 300)
 }
-let resizeObserver:ResizeObserver|null
+
+async function dbClickFileList(item) {
+  if (listClickTimeOut) {
+    clearTimeout(listClickTimeOut)
+  }
+  console.log("双击触发")
+  if (item.folderName) {
+    await reloadFile(globalStore.loginUser, item.type, item.id);
+    filePathSelectedKeys.value = [item.id]
+    filePathSelectedRow.value = {type: item.type, id: item.id}
+    backStack.push({type: item.type, id: item.parentId})
+    forwardStack.clear()
+  }
+}
+
+async function historyBack() {
+  const item = backStack.pop()
+  if (item) {
+    try {
+      await reloadFile(globalStore.loginUser, item.type, item.id);
+      forwardStack.push(filePathSelectedRow.value)
+      filePathSelectedKeys.value = [item.id]
+      filePathSelectedRow.value = item
+    } catch (e) {
+      backStack.push(item)
+    }
+  }
+}
+
+async function historyForward() {
+  const item = forwardStack.pop()
+  console.log(item)
+  if (item) {
+    try {
+      await reloadFile(globalStore.loginUser, item.type, item.id);
+      backStack.push(filePathSelectedRow.value)
+      filePathSelectedKeys.value = [item.id]
+      filePathSelectedRow.value = item
+    } catch (e) {
+      forwardStack.push(item)
+    }
+  }
+}
+
+let resizeObserver: ResizeObserver | null
 onMounted(async () => {
 
   const folderData: any = await getFolderTree({username: globalStore.loginUser})
-  await reloadFile(globalStore.loginUser, tabKeyToValueMap.get(key.value),'');
+  await reloadFile(globalStore.loginUser, tabKeyToValueMap.get(key.value), '');
   filePathTree.value = folderData.result
+  filePathSelectedRow.value = {id: '', type: tabKeyToValueMap.get(key.value)}
+  filePathExpandKeys.value = ['controller']
+  filePathSelectedKeys.value = ['controller']
 })
 
-async function reloadFile(username:string,fileType:number|undefined,nodeId:string){
-  const fileDate:any = await getTempFileList({username: username, fileType: fileType,nodeId:nodeId});
+async function reloadFile(username: string, fileType: number | undefined, nodeId: string) {
+  const fileDate: any = await getTempFileList({username: username, fileType: fileType, nodeId: nodeId});
   data.value = fileDate.result
-  data.value.forEach((item:any) => {
+  data.value.forEach((item: any) => {
     dataMap.value.set(item.id, item)
   })
 }
 
-onUpdated(()=>{
-  if (resizeObserver){
+onUpdated(() => {
+  if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null
-  }else {
+  } else {
     if (list.value) {
       resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
@@ -197,21 +287,33 @@ function selectTree(keys, e) {
   filePathSelectedKeys.value = [e.node.key]
   // 设置一个新的定时器
   clickTimeout = window.setTimeout(async () => {
-    console.log(e.node.which)
-    console.log(tabKeyToValueMap)
-    await reloadFile(globalStore.loginUser, e.node.which,e.node.type == -1?'':e.node.key);
+    const id = e.node.type == -1 ? '' : e.node.key
+    if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != e.node.which) {
+      backStack.push({type: filePathSelectedRow.value.type, id: filePathSelectedRow.value.id})
+      forwardStack.clear()
+    }
+    filePathSelectedRow.value = {id: id, type: e.node.which}
+    await reloadFile(globalStore.loginUser, e.node.which, e.node.type == -1 ? '' : e.node.key);
+    console.log(backStack)
   }, 300);
 
 }
 
-function handleDoubleClick(e, node) {
+async function handleDoubleClick(e, node) {
   if (clickTimeout) {
     clearTimeout(clickTimeout);
   }
   console.log("双击")
-  console.log(filePathExpandKeys.value)
+  const id = node.type == -1 ? '' : node.key
+  if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != node.which) {
+    backStack.push({type: filePathSelectedRow.value.type, id: filePathSelectedRow.value.id})
+    forwardStack.clear()
+  }
+  filePathSelectedRow.value = {id: id, type: node.which}
+  await reloadFile(globalStore.loginUser, node.which, node.type == -1 ? '' : node.key);
+  console.log(backStack)
   if (!filePathExpandKeys.value.includes(node.key)) {
-    filePathExpandKeys.value = [...filePathExpandKeys.value,node.key]
+    filePathExpandKeys.value = [...filePathExpandKeys.value, node.key]
   } else {
     filePathExpandKeys.value = filePathExpandKeys.value.filter(v => v !== node.key)
   }

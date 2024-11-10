@@ -40,3 +40,8 @@ export const columns = ref([
         title: '修改日期',
     },
 ])
+
+export interface historyObj {
+    id:string,
+    type:string
+}

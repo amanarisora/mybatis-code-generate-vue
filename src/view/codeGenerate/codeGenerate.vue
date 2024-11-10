@@ -11,13 +11,13 @@
       </a-col>
       <a-col>
         <a-space>
-          <a-form layout="inline" autocomplete="off">
+          <a-form :model="searchForm" layout="inline" autocomplete="off">
             <a-space>
               <a-form-item label="表名" name="tableName">
-                <a-input style="width: 140px;" v-model:value="searchForm.tableName" :allowClear="true"/>
+                <a-input class="customInput" style="width: 140px;" v-model:value="searchForm.tableName" :allowClear="true"/>
               </a-form-item>
               <a-form-item label="备注" name="des">
-                <a-input style="width: 140px;" v-model:value="searchForm.des" :allowClear="true"/>
+                <a-input class="customInput" style="width: 140px;" v-model:value="searchForm.des" :allowClear="true"/>
               </a-form-item>
             </a-space>
           </a-form>
@@ -41,7 +41,7 @@
 
     <a-input :value="selectedRowKeys.join(' , ')"/>
     <a-form
-        style="margin-left: 0px;padding-top: 20px"
+        style="margin-left: 0;padding-top: 20px"
         ref="form"
         :model="generateForm"
         name="basic"
@@ -212,7 +212,8 @@ function reloadTable(){
   const currentSelectedDatabase = showObjStore.currentSelectedDatabase
   const datasourceMap = showObjStore.tableObjData.get(currentSelectedDatasource)
   if(datasourceMap){
-    tableData.value = datasourceMap.get(currentSelectedDatabase)?datasourceMap.get(currentSelectedDatabase):[]
+    allTableData.value = datasourceMap.get(currentSelectedDatabase)?datasourceMap.get(currentSelectedDatabase):[]
+    tableData.value = allTableData.value
   }
 }
 
@@ -294,7 +295,7 @@ function selectAll() {
   if (selectedRowKeys.value.length === tableData.value.length) {
     selectedRowKeys.value = []
   } else {
-    selectedRowKeys.value = tableData.value.map(t => t.key)
+    selectedRowKeys.value = tableData.value.map(t => t.id)
   }
 }
 
@@ -315,12 +316,15 @@ function search(){
   tableData.value = []
   allTableData.value.forEach(i=>{
     if (isNotBlank(searchForm.tableName)){
-      if (!i.TABLE_NAME.includes(searchForm.tableName)){
+      if (!i.tableName.includes(searchForm.tableName)){
+        console.log(i.tableName)
+        console.log(searchForm.tableName)
+        console.log(i.tableName.includes(searchForm.tableName))
         return
       }
     }
     if (isNotBlank(searchForm.des)){
-      if (!i.TABLE_COMMENT.includes(searchForm.des)){
+      if (!i.tableComment.includes(searchForm.des)){
         return
       }
     }
@@ -397,12 +401,7 @@ function handleResizeColumn(w, col) {
   font-weight: bold;
 }
 
-:deep(.ant-table-thead) > tr > th {
-  background-color: #e3eff9 !important; /* 青色 */
-}
-
-/* 设置单数行的背景颜色 */
-:deep(.ant-table-tbody) > tr:nth-child(odd) {
-  background-color: #f8f9fb !important; /* 青色 */
+:deep(.customInput .ant-input){
+  background: rgba(0,0,0,0) !important;
 }
 </style>

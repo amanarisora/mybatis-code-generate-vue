@@ -10,9 +10,9 @@
     </a-layout-header>
 
     <a-layout style="height:100%;background-image: url('/main.png');background-size: cover;">
-      <a-layout-sider class="sider" :width="siderWidth" style="height: 100%;overflow: auto;overflow-x: hidden;">
+      <a-layout-sider class="sider" :width="siderWidth" style="background-color: rgba(24,24,24,0.5);height: 100%;overflow: auto;overflow-x: hidden;">
 
-        <div style="position: relative">
+        <div style="position: relative;height: 100%;">
           <DatasourceTree @openTerminal="openTerminal" @openNewQuery="openNewQuery"
                           @updateTabListWhenDatasourceClosed="updateTabListWhenDatasourceClosed"
                           @updateTabListWhenDatabaseClosed="updateTabListWhenDatabaseClosed"/>
