@@ -34,8 +34,8 @@
             <a-button :disabled="forwardStack.size()==0" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small" @click="historyForward">
               <arrow-right-small :style="{color: forwardStack.size()==0?'darkgray':'white'}"/>
             </a-button>
-            <a-button type="ghost" style="display: flex;align-items: center;justify-content: center" size="small">
-              <arrow-top-small/>
+            <a-button :disabled="filePathSelectedRow.parentId==null" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small" @click="goToParentFolder">
+              <arrow-top-small :style="{color: filePathSelectedRow.parentId==null?'darkgray':'white'}"/>
             </a-button>
           </a-row>
         </a-layout-header>
@@ -45,7 +45,7 @@
           <a-layout-sider width="250" style="background-color: rgba(24,24,24,0);position: relative;">
             <a-tree
                 style="background-color: rgba(24,24,24,0);font-size: 15px;height: 100%;"
-                :tree-data="filePathTree"
+                :tree-data="folderTree"
                 v-model:selectedKeys="filePathSelectedKeys"
                 v-model:expandedKeys="filePathExpandKeys"
                 @select="selectTree"
@@ -79,7 +79,7 @@
               style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto;background-color: rgba(24,24,24,0)"
               @click="()=>{selectedRowKeys = [];selectedRowKeysSet.clear();selectedRow = []}">
             <a-list ref="list" :grid="{ gutter: 20, xs: 1, sm: 1, md: 1, lg: 2, xl: 4, xxl: xxlNum }"
-                    :data-source="data">
+                    :data-source="fileAndFolderDataList">
               <template #renderItem="{ item }">
                 <a-list-item>
                   <a-list-item-meta>
@@ -111,9 +111,16 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {tabKeyToValueMap, tabList} from "@/ts/interfaces";
+import {tabKeyToValueMap, tabList, ValueToTabKeyMap} from "@/ts/interfaces";
 import {onMounted, ref, h, nextTick, onBeforeUnmount, watch, onUpdated, computed, reactive} from "vue";
-import {deleteFolder, editFolderName, getFolderTree, getTempFileList, uploadTempFile} from "@/Api";
+import {
+  deleteFolder,
+  editFolderName,
+  getChildrenFolderAndFileList,
+  getFolderTree,
+  getTempFileList,
+  uploadTempFile
+} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {ReloadOutlined, UploadOutlined, ExclamationCircleOutlined, ArrowLeftOutlined} from "@ant-design/icons-vue";
 import {message, Modal} from "ant-design-vue";
@@ -137,18 +144,20 @@ const globalStore = useGlobalStore();
 const isUploading = ref(false)
 const fileList: any = ref()
 const realFileList: any = ref([])
+
+const folderTree: any = ref([])
 const filePathSelectedKeys: any = ref([])
-const filePathSelectedRow: historyObj = ref(null)
+const filePathSelectedRow: any = ref({id:null,type:null,parentId:null})
 const filePathExpandKeys: any = ref([])
-const data = ref([])
-const dataMap = ref(new Map())
+const fileAndFolderDataList:any = ref([])
+const fileAndFolderDataMap = ref(new DualIndexMap<string,any>('id','parentId'))
 const list = ref()
 const xxlNum = ref(6)
 
 const backStack = reactive(new FileStack<historyObj>(10));
 const forwardStack = reactive(new FileStack<historyObj>(10));
 
-const filePathTree: any = ref([])
+
 const selectedRowKeys: any = ref([])
 const selectedRowKeysSet: any = ref(new Set())
 const selectedRow: any = ref([])
@@ -176,8 +185,9 @@ async function dbClickFileList(item) {
   if (item.folderName) {
     await reloadFile(globalStore.loginUser, item.type, item.id);
     filePathSelectedKeys.value = [item.id]
-    filePathSelectedRow.value = {type: item.type, id: item.id}
-    backStack.push({type: item.type, id: item.parentId})
+    backStack.push(filePathSelectedRow.value)
+    filePathSelectedRow.value = {type: item.type, id: item.id,parentId:item.parentId}
+    console.log(filePathSelectedRow.value)
     forwardStack.clear()
   }
 }
@@ -188,7 +198,7 @@ async function historyBack() {
     try {
       await reloadFile(globalStore.loginUser, item.type, item.id);
       forwardStack.push(filePathSelectedRow.value)
-      filePathSelectedKeys.value = [item.id]
+      filePathSelectedKeys.value = [item.id==''?ValueToTabKeyMap.get(item.type):item.id]
       filePathSelectedRow.value = item
     } catch (e) {
       backStack.push(item)
@@ -199,11 +209,12 @@ async function historyBack() {
 async function historyForward() {
   const item = forwardStack.pop()
   console.log(item)
+  console.log(forwardStack.size())
   if (item) {
     try {
       await reloadFile(globalStore.loginUser, item.type, item.id);
       backStack.push(filePathSelectedRow.value)
-      filePathSelectedKeys.value = [item.id]
+      filePathSelectedKeys.value = [item.id==''?ValueToTabKeyMap.get(item.type):item.id]
       filePathSelectedRow.value = item
     } catch (e) {
       forwardStack.push(item)
@@ -211,24 +222,58 @@ async function historyForward() {
   }
 }
 
-let resizeObserver: ResizeObserver | null
-onMounted(async () => {
+async function goToParentFolder(){
+  backStack.push(filePathSelectedRow.value)
+  await reloadFile(globalStore.loginUser, filePathSelectedRow.value.type, filePathSelectedRow.value.parentId);
+  const parentItem = filePathSet.get(filePathSelectedRow.value.parentId)
+  filePathSelectedRow.value = {id: parentItem.type == -1?'':parentItem.key,type:parentItem.which,parentId:parentItem.parentId}
+  console.log(filePathSelectedRow.value)
+  forwardStack.clear()
+}
 
-  const folderData: any = await getFolderTree({username: globalStore.loginUser})
-  await reloadFile(globalStore.loginUser, tabKeyToValueMap.get(key.value), '');
-  filePathTree.value = folderData.result
-  filePathSelectedRow.value = {id: '', type: tabKeyToValueMap.get(key.value)}
-  filePathExpandKeys.value = ['controller']
-  filePathSelectedKeys.value = ['controller']
+
+
+onMounted(async () => {
+  const folderData: any = await getChildrenFolderAndFileList({username: globalStore.loginUser})
+  await getChildrenFolderAndFileList({username: globalStore.loginUser,fileType: 1,parentId:''})
+  filePathSelectedRow.value = folderTree.value[0]
+  filePathExpandKeys.value = [folderTree.value[0].key]
+  filePathSelectedKeys.value = [folderTree.value[0].key]
 })
 
+function initTreeMap(treeData){
+  treeData.forEach(item=>{
+    filePathSet.value.set(item.key, item)
+    initTreeMap(item.children)
+  })
+}
+
+async function reloadChildrenFolderAndFileList(username: string, fileType: number|undefined, parentId: string|undefined){
+  const folderAndFileList: any = await getChildrenFolderAndFileList({username: username,fileType: fileType,parentId:parentId})
+  const folderList:any = folderAndFileList.result.folderList
+  const fileList:any = folderAndFileList.result.fileList
+  fileAndFolderDataList.value = [...folderList,...fileList]
+  fileAndFolderDataList.value.result.forEach((item: any) => {
+    fileAndFolderDataMap.value.replaceAllBySecIndex(item.parentId, item)
+  })
+  if(!parentId){
+    folderTree.value = folderList
+  }else {
+    fileAndFolderDataMap.value.getById(parentId).children = folderList?folderList:[]
+  }
+  folderTree.value.push({})
+  folderTree.value.pop()
+}
+
 async function reloadFile(username: string, fileType: number | undefined, nodeId: string) {
-  const fileDate: any = await getTempFileList({username: username, fileType: fileType, nodeId: nodeId});
-  data.value = fileDate.result
+  const fileData: any = await getTempFileList({username: username, fileType: fileType, nodeId: nodeId});
+  data.value = fileData.result
   data.value.forEach((item: any) => {
     dataMap.value.set(item.id, item)
   })
 }
+
+let resizeObserver: ResizeObserver | null
 
 onUpdated(() => {
   if (resizeObserver) {
@@ -289,10 +334,10 @@ function selectTree(keys, e) {
   clickTimeout = window.setTimeout(async () => {
     const id = e.node.type == -1 ? '' : e.node.key
     if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != e.node.which) {
-      backStack.push({type: filePathSelectedRow.value.type, id: filePathSelectedRow.value.id})
+      backStack.push(filePathSelectedRow.value)
       forwardStack.clear()
     }
-    filePathSelectedRow.value = {id: id, type: e.node.which}
+    filePathSelectedRow.value = {id: id, type: e.node.which,parentId:e.node.parentId}
     await reloadFile(globalStore.loginUser, e.node.which, e.node.type == -1 ? '' : e.node.key);
     console.log(backStack)
   }, 300);
@@ -306,10 +351,10 @@ async function handleDoubleClick(e, node) {
   console.log("双击")
   const id = node.type == -1 ? '' : node.key
   if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != node.which) {
-    backStack.push({type: filePathSelectedRow.value.type, id: filePathSelectedRow.value.id})
+    backStack.push(filePathSelectedRow.value)
     forwardStack.clear()
   }
-  filePathSelectedRow.value = {id: id, type: node.which}
+  filePathSelectedRow.value = {id: id, type: node.which, parentId:e.node.parentId}
   await reloadFile(globalStore.loginUser, node.which, node.type == -1 ? '' : node.key);
   console.log(backStack)
   if (!filePathExpandKeys.value.includes(node.key)) {

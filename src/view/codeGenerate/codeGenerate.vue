@@ -31,148 +31,150 @@
         </a-space>
       </a-col>
     </a-row>
-    <a-table :columns="columns" :data-source="tableData" :pagination="pagination" @resizeColumn="handleResizeColumn"
-             :row-selection="rowSelection" row-key="id" style="min-height: 500px">
-      <template #bodyCell="{ column, record,index }">
-        <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
-      </template>
-    </a-table>
+    <div style="height: calc(100% - 72px);overflow: auto">
+      <a-table :columns="columns" :data-source="tableData" :pagination="pagination" @resizeColumn="handleResizeColumn"
+               :row-selection="rowSelection" row-key="id" style="min-height: 500px">
+        <template #bodyCell="{ column, record,index }">
+          <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
+        </template>
+      </a-table>
 
 
-    <a-input :value="selectedRowKeys.join(' , ')"/>
-    <a-form
-        style="margin-left: 0;padding-top: 20px"
-        ref="form"
-        :model="generateForm"
-        name="basic"
-        :label-col="{ span: 8 }"
-        :wrapper-col="{ span: 40 }"
-        autocomplete="off"
-    >
-      <a-row class="bold-text">
-        <a-col>
-          <a-form-item label="model" name="model"
-                       :rules="[{ required: true, message: '需要model!',trigger: 'blur' }]"
-          >
-            <a-input v-model:value="generateForm.model"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item label="package" name="packageName"
-                       :rules="[{ required: true, message: '需要package!',trigger: 'blur' }]"
-          >
-            <a-input v-model:value="generateForm.packageName"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item label="作者" name="author"
-                       :rules="[{ required: true, message: '需要author!',trigger: 'blur' }]"
-          >
-            <a-input v-model:value="generateForm.author"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col style="padding-left: 30px">
-          <a-form-item label="去除表前缀" name="tablePrefix">
-            <a-input v-model:value="generateForm.tablePrefix"></a-input>
-          </a-form-item>
-        </a-col>
-      </a-row>
-      <a-row class="bold-text">
-        <a-col>
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needEntity">Entity</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-input class="generate-input" v-model:value="generateForm.entityFilePathName"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needMapper">Mapper</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-input class="generate-input" v-model:value="generateForm.mapperFilePathName"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needController">Controller</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-input class="generate-input" v-model:value="generateForm.controllerFilePathName"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needService">Service</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-input class="generate-input" v-model:value="generateForm.serviceFilePathName"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col>
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needServiceImpl">ServiceImpl</a-checkbox>
-            <a-input class="generate-input" v-model:value="generateForm.serviceImplFilePathName"></a-input>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <!--                <a-form-item>
+      <a-input :value="selectedRowKeys.join(' , ')"/>
+      <a-form
+          style="margin-left: 0;margin-top: 20px"
+          ref="form"
+          :model="generateForm"
+          name="basic"
+          :label-col="{ span: 8 }"
+          :wrapper-col="{ span: 40 }"
+          autocomplete="off"
+      >
+        <a-row class="bold-text">
+          <a-col>
+            <a-form-item label="model" name="model"
+                         :rules="[{ required: true, message: '需要model!',trigger: 'blur' }]"
+            >
+              <a-input v-model:value="generateForm.model"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col>
+            <a-form-item label="package" name="packageName"
+                         :rules="[{ required: true, message: '需要package!',trigger: 'blur' }]"
+            >
+              <a-input v-model:value="generateForm.packageName"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col>
+            <a-form-item label="作者" name="author"
+                         :rules="[{ required: true, message: '需要author!',trigger: 'blur' }]"
+            >
+              <a-input v-model:value="generateForm.author"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col style="padding-left: 30px">
+            <a-form-item label="去除表前缀" name="tablePrefix">
+              <a-input v-model:value="generateForm.tablePrefix"></a-input>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row class="bold-text">
+          <a-col>
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needEntity">Entity</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-input class="generate-input" v-model:value="generateForm.entityFilePathName"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col>
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needMapper">Mapper</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-input class="generate-input" v-model:value="generateForm.mapperFilePathName"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col>
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needController">Controller</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-input class="generate-input" v-model:value="generateForm.controllerFilePathName"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col>
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needService">Service</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-input class="generate-input" v-model:value="generateForm.serviceFilePathName"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col>
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needServiceImpl">ServiceImpl</a-checkbox>
+              <a-input class="generate-input" v-model:value="generateForm.serviceImplFilePathName"></a-input>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <!--                <a-form-item>
 
-                          </a-form-item>-->
-        </a-col>
-      </a-row>
-      <a-row class="bold-text">
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needLombok">Lombok</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needChainModel">
-              <a-tooltip>
-                <template #title>实体类set方法返回自身</template>
-                ChainModel
-              </a-tooltip>
-            </a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needRestController">RestController</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needMapperAnno">@Mapper</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needSwagger">Swagger</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col">
-          <a-form-item>
-            <a-checkbox v-model:checked="generateForm.needSpringDoc">SpringDoc</a-checkbox>
-          </a-form-item>
-        </a-col>
-        <a-col class="generate-col" style="position: absolute;right: 5%">
-          <a-form-item>
-            <a-button type="primary" @click="generateSubmit">生成</a-button>
-          </a-form-item>
-        </a-col>
-      </a-row>
-    </a-form>
+                            </a-form-item>-->
+          </a-col>
+        </a-row>
+        <a-row class="bold-text">
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needLombok">Lombok</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needChainModel">
+                <a-tooltip>
+                  <template #title>实体类set方法返回自身</template>
+                  ChainModel
+                </a-tooltip>
+              </a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needRestController">RestController</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needMapperAnno">@Mapper</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needSwagger">Swagger</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col">
+            <a-form-item>
+              <a-checkbox v-model:checked="generateForm.needSpringDoc">SpringDoc</a-checkbox>
+            </a-form-item>
+          </a-col>
+          <a-col class="generate-col" style="position: absolute;right: 5%">
+            <a-form-item>
+              <a-button type="primary" @click="generateSubmit">生成</a-button>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </a-form>
+    </div>
     <CodeMirrorModal v-model:open="openEditTemp"/>
     <TempRepositoryModal v-model:open="openTempRep"/>
   </div>

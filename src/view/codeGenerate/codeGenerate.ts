@@ -43,5 +43,6 @@ export const columns = ref([
 
 export interface historyObj {
     id:string,
-    type:string
+    type:number,
+    parentId:string|null
 }

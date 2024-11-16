@@ -16,7 +16,7 @@ export const useShowObjStore = defineStore('showObj', {
         datasourceTreeData: [] as any[],
         treeDataMap: new Map(),
         panes:[{ title: '对象', key: 'ShowObjectKey',component:markRaw(ShowObject),closable:false }] as { title: string; key: string; component:any; closable?: boolean;
-            props?:object;databaseName?:string;datasourceName?:string;id?:string;
+            props?:object;databaseName?:string;datasourceName?:string;id?:string;style?:object;
         }[],
         activeKey: 'ShowObjectKey',
 

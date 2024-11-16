@@ -4,6 +4,7 @@ export enum Api {
     getAllTableList = '/getAllTableList',
     getAllDataSource = '/getAllDataSource',
     getAllDataBases = '/getAllDataBases',
+    getChildrenFolderAndFileList = '/getChildrenFolderAndFileList',
     addDataSource = '/addDataSource',
     createDatabase = '/createDatabase',
     renameDataSource = '/renameDataSource',
@@ -18,6 +19,7 @@ export enum Api {
 export const getAllTableList = (params) => httpUtils.get( Api.getAllTableList,params);
 export const getAllDataSource = (params) => httpUtils.get( Api.getAllDataSource,params);
 export const getAllDataBases = (params) => httpUtils.get( Api.getAllDataBases,params);
+export const getChildrenFolderAndFileList = (params) => httpUtils.get( Api.getChildrenFolderAndFileList,params);
 export const testDataSourceConnection = (params) => httpUtils.get( Api.testDataSourceConnection,params);
 export const addDataSource = (params) => httpUtils.post( Api.addDataSource,params);
 export const createDatabase = (params) => httpUtils.post( Api.createDatabase,{},{params:params});

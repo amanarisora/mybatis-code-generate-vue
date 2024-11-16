@@ -1,48 +1,50 @@
 import {ref} from "vue";
 
 export interface FormState {
-    id:string;
+    id: string;
     name: string;
     url: string;
     username: string;
     password: string;
-    user:string;
-}
-export interface TableData{
-    key:string;
-    TABLE_NAME: string;
-    TABLE_COMMENT:string;
-    CREATE_TIME:string;
+    user: string;
 }
 
-export interface generateFormData{
-    model:string;
-    packageName:string;
-    author:string;
-    tablePrefix:string;
-    needEntity:boolean;
-    entityFilePathName:string;
-    needMapper:boolean;
-    mapperFilePathName:string;
-    needController:boolean;
-    controllerFilePathName:string;
-    needService:boolean;
-    serviceFilePathName:string;
-    needServiceImpl:boolean;
-    serviceImplFilePathName:string;
-    needLombok:boolean;
-    needChainModel:boolean;
-    needRestController:boolean;
-    needMapperAnno:boolean;
-    needSwagger:boolean;
-    needSpringDoc:boolean;
+export interface TableData {
+    key: string;
+    TABLE_NAME: string;
+    TABLE_COMMENT: string;
+    CREATE_TIME: string;
 }
-export function createRowSelection(selectedRowKeys: any,selectedRow?:any,columnWidth?:number) {
+
+export interface generateFormData {
+    model: string;
+    packageName: string;
+    author: string;
+    tablePrefix: string;
+    needEntity: boolean;
+    entityFilePathName: string;
+    needMapper: boolean;
+    mapperFilePathName: string;
+    needController: boolean;
+    controllerFilePathName: string;
+    needService: boolean;
+    serviceFilePathName: string;
+    needServiceImpl: boolean;
+    serviceImplFilePathName: string;
+    needLombok: boolean;
+    needChainModel: boolean;
+    needRestController: boolean;
+    needMapperAnno: boolean;
+    needSwagger: boolean;
+    needSpringDoc: boolean;
+}
+
+export function createRowSelection(selectedRowKeys: any, selectedRow?: any, columnWidth?: number) {
     return ref({
         checkStrictly: false,
         columnWidth: '2%',
         selectedRowKeys: selectedRowKeys,
-        onChange: (keys,rows?) => {
+        onChange: (keys, rows?) => {
             selectedRowKeys.value = keys;
             if (selectedRow) {
                 selectedRow.value = rows;

@@ -23,10 +23,10 @@
 
       <div v-if="isResizing" class="resize-line sider" :style="{ transform: `translateX(${resizerPosition}px)` }"></div>
       <div v-if="isResizing" class="overlay"></div>
-      <a-layout-content class="sider" style="padding: 5px 12px 15px 12px; margin: 0; min-height: 280px;position:relative;">
+      <a-layout-content class="sider" style="margin: 0 12px 0 12px;min-height: 280px;position:relative;">
         <a-tabs v-model:activeKey="showObjStore.activeKey" hide-add type="editable-card" style="height: 100%" :tabBarStyle="{margin:'0'}" @edit="onEdit">
           <a-tab-pane v-for="pane in showObjStore.panes" :key="pane.key" :tab="pane.title" :closable="pane.closable" style="height: 100%;overflow: auto">
-            <component :is="pane.component" v-bind="pane.props"/>
+            <component :is="pane.component" v-bind="pane.props" :style="pane.style?pane.style:{}"/>
           </a-tab-pane>
         </a-tabs>
 
@@ -42,9 +42,6 @@ import {useGlobalStore} from "@/store/globalStore";
 import {router} from "@/router/router";
 import DatasourceTree from "@/view/leftTree/DatasourceTree.vue";
 import MySqlTerminalModal from "@/view/leftTree/MySqlTerminalModal.vue";
-import CodeGenerate from "@/view/codeGenerate/codeGenerate.vue";
-import TableData from "@/view/table/TableData.vue";
-import ShowObject from "@/view/common/ShowObject.vue";
 import {generateUUID} from "@/ts/interfaces";
 import Query from "@/view/table/Query.vue";
 import {useShowObjStore} from "@/store/showObjStore";

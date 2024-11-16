@@ -10,7 +10,6 @@
     }"
     >
       <a-space style="padding: 5px 0 5px 0">
-
         <customSelect v-model:value="datasourceName" :options="datasourceData">
           <template #prefixIcon>
             <MysqlOnSmall class="mysql-icon-small" />

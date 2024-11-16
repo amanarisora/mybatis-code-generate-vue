@@ -1,5 +1,5 @@
 export class FileStack<T> {
-    private items:T[] = []
+    private items:(T | null)[] = []
     private startIndex = 0
     private endIndex = 0
     private readonly maxSize: number = 0

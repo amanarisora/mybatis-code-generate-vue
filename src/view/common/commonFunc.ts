@@ -37,7 +37,7 @@ export function openGenerate(){
     let key = generateUUID()
     const title = '代码生成'
     if (!showObjStore.panes.some(obj => obj.title === title)){
-        showObjStore.panes.push({title: title, key: key,component:markRaw(codeGenerate)})
+        showObjStore.panes.push({title: title, key: key,component:markRaw(codeGenerate),style:{height:'calc(100% - 20px)'}})
     }
     showObjStore.panes.forEach(item=>{
         if (item.title === title){
