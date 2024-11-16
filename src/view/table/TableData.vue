@@ -1,13 +1,15 @@
 <template>
-  <a-table :columns="columns" :data-source="tableData" :pagination="pagination" bordered
-           :scroll="{x: '100%',y:tableHeight}" :style="{minHeight: tableHeight+'px'}"
-           :row-selection="rowSelection" row-key="id" :virtual="true" @resizeColumn="handleResizeColumn"
-           >
+  <div>
+    <a-table :columns="columns" :data-source="tableData" :pagination="pagination" bordered
+             :scroll="{x: '100%',y:tableHeight}" :style="{minHeight: tableHeight+'px'}"
+             :row-selection="rowSelection" row-key="id" :virtual="true" @resizeColumn="handleResizeColumn"
+    >
 
-    <template #bodyCell="{text, column, record,index }">
-      <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
-    </template>
-  </a-table>
+      <template #bodyCell="{text, column, record,index }">
+        <span v-if="column.key =='cs121sn801n'">{{ ((pagination.current - 1) * pagination.pageSize) + index + 1 }}</span>
+      </template>
+    </a-table>
+  </div>
 </template>
 
 <script setup lang="ts">

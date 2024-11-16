@@ -50,8 +50,8 @@
         <QueryResult :panes="panes" :isChanged="isChanged" style="width: 100%;height: 100%;background-color: rgba(0,0,0,0.8)"/>
       </pane>
     </SplitPanes>
+    <SaveQueryMadal v-model:open="openSaveQueryModal" @saveQuerySubmit="saveQuerySubmit"/>
   </div>
-  <SaveQueryMadal v-model:open="openSaveQueryModal" @saveQuerySubmit="saveQuerySubmit"/>
 </template>
 
 <script setup lang="ts">
