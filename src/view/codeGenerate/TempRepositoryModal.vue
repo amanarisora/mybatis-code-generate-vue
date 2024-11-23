@@ -128,13 +128,12 @@ import FolderTree from "@/assets/folder_tree.svg"
 import Idea from "@/assets/idea.svg"
 import FolderWithFiles from "@/assets/folder_with_files.svg"
 import Folder from "@/assets/folder.svg"
-import BackSmall from "@/assets/back-small.svg";
-import ReturnSmall from "@/assets/return-small.svg";
 import ArrowLeftSmall from "@/assets/arrow-left-small.svg"
 import ArrowRightSmall from "@/assets/arrow-right-small.svg"
 import ArrowTopSmall from "@/assets/arrow-top-small.svg"
 import {FileStack} from "@/view/common/FileStack";
 import {historyObj} from "@/view/codeGenerate/codeGenerate";
+import {DualIndexMap} from "@/view/common/DualIndexMap";
 
 const props = defineProps({open: Boolean});
 const emit = defineEmits(['update:open']);
@@ -150,7 +149,7 @@ const filePathSelectedKeys: any = ref([])
 const filePathSelectedRow: any = ref({id:null,type:null,parentId:null})
 const filePathExpandKeys: any = ref([])
 const fileAndFolderDataList:any = ref([])
-const fileAndFolderDataMap = ref(new DualIndexMap<string,any>('id','parentId'))
+const fileAndFolderDataMap = new DualIndexMap<string,any>('id','parentId')
 const list = ref()
 const xxlNum = ref(6)
 
@@ -183,7 +182,7 @@ async function dbClickFileList(item) {
   }
   console.log("双击触发")
   if (item.folderName) {
-    await reloadFile(globalStore.loginUser, item.type, item.id);
+    await reloadChildrenFolderAndFileList(globalStore.loginUser, item.type, item.id);
     filePathSelectedKeys.value = [item.id]
     backStack.push(filePathSelectedRow.value)
     filePathSelectedRow.value = {type: item.type, id: item.id,parentId:item.parentId}
@@ -196,7 +195,7 @@ async function historyBack() {
   const item = backStack.pop()
   if (item) {
     try {
-      await reloadFile(globalStore.loginUser, item.type, item.id);
+      await reloadChildrenFolderAndFileList(globalStore.loginUser, item.type, item.id);
       forwardStack.push(filePathSelectedRow.value)
       filePathSelectedKeys.value = [item.id==''?ValueToTabKeyMap.get(item.type):item.id]
       filePathSelectedRow.value = item
@@ -212,7 +211,7 @@ async function historyForward() {
   console.log(forwardStack.size())
   if (item) {
     try {
-      await reloadFile(globalStore.loginUser, item.type, item.id);
+      await reloadChildrenFolderAndFileList(globalStore.loginUser, item.type, item.id);
       backStack.push(filePathSelectedRow.value)
       filePathSelectedKeys.value = [item.id==''?ValueToTabKeyMap.get(item.type):item.id]
       filePathSelectedRow.value = item
@@ -224,8 +223,8 @@ async function historyForward() {
 
 async function goToParentFolder(){
   backStack.push(filePathSelectedRow.value)
-  await reloadFile(globalStore.loginUser, filePathSelectedRow.value.type, filePathSelectedRow.value.parentId);
-  const parentItem = filePathSet.get(filePathSelectedRow.value.parentId)
+  await reloadChildrenFolderAndFileList(globalStore.loginUser, filePathSelectedRow.value.type, filePathSelectedRow.value.parentId);
+  const parentItem = fileAndFolderDataMap.getById(filePathSelectedRow.value.parentId)
   filePathSelectedRow.value = {id: parentItem.type == -1?'':parentItem.key,type:parentItem.which,parentId:parentItem.parentId}
   console.log(filePathSelectedRow.value)
   forwardStack.clear()
@@ -234,43 +233,28 @@ async function goToParentFolder(){
 
 
 onMounted(async () => {
-  const folderData: any = await getChildrenFolderAndFileList({username: globalStore.loginUser})
+  await reloadChildrenFolderAndFileList(globalStore.loginUser)
   await getChildrenFolderAndFileList({username: globalStore.loginUser,fileType: 1,parentId:''})
   filePathSelectedRow.value = folderTree.value[0]
   filePathExpandKeys.value = [folderTree.value[0].key]
   filePathSelectedKeys.value = [folderTree.value[0].key]
 })
 
-function initTreeMap(treeData){
-  treeData.forEach(item=>{
-    filePathSet.value.set(item.key, item)
-    initTreeMap(item.children)
-  })
-}
-
-async function reloadChildrenFolderAndFileList(username: string, fileType: number|undefined, parentId: string|undefined){
+async function reloadChildrenFolderAndFileList(username: string, fileType?: number, parentId?: string){
   const folderAndFileList: any = await getChildrenFolderAndFileList({username: username,fileType: fileType,parentId:parentId})
   const folderList:any = folderAndFileList.result.folderList
   const fileList:any = folderAndFileList.result.fileList
   fileAndFolderDataList.value = [...folderList,...fileList]
-  fileAndFolderDataList.value.result.forEach((item: any) => {
-    fileAndFolderDataMap.value.replaceAllBySecIndex(item.parentId, item)
+  fileAndFolderDataList.value.forEach((item: any) => {
+    fileAndFolderDataMap.replaceAllBySecIndex(item.parentId, item)
   })
   if(!parentId){
     folderTree.value = folderList
   }else {
-    fileAndFolderDataMap.value.getById(parentId).children = folderList?folderList:[]
+    fileAndFolderDataMap.getById(parentId).children = folderList?folderList:[]
   }
   folderTree.value.push({})
   folderTree.value.pop()
-}
-
-async function reloadFile(username: string, fileType: number | undefined, nodeId: string) {
-  const fileData: any = await getTempFileList({username: username, fileType: fileType, nodeId: nodeId});
-  data.value = fileData.result
-  data.value.forEach((item: any) => {
-    dataMap.value.set(item.id, item)
-  })
 }
 
 let resizeObserver: ResizeObserver | null
@@ -338,7 +322,7 @@ function selectTree(keys, e) {
       forwardStack.clear()
     }
     filePathSelectedRow.value = {id: id, type: e.node.which,parentId:e.node.parentId}
-    await reloadFile(globalStore.loginUser, e.node.which, e.node.type == -1 ? '' : e.node.key);
+    await reloadChildrenFolderAndFileList(globalStore.loginUser, e.node.which, e.node.type == -1 ? '' : e.node.key);
     console.log(backStack)
   }, 300);
 
@@ -355,7 +339,7 @@ async function handleDoubleClick(e, node) {
     forwardStack.clear()
   }
   filePathSelectedRow.value = {id: id, type: node.which, parentId:e.node.parentId}
-  await reloadFile(globalStore.loginUser, node.which, node.type == -1 ? '' : node.key);
+  await reloadChildrenFolderAndFileList(globalStore.loginUser, node.which, node.type == -1 ? '' : node.key);
   console.log(backStack)
   if (!filePathExpandKeys.value.includes(node.key)) {
     filePathExpandKeys.value = [...filePathExpandKeys.value, node.key]
@@ -367,7 +351,6 @@ async function handleDoubleClick(e, node) {
 
 function onContextMenuClick(treeKey, menuKey, title, type) {
   console.log(treeKey)
-  console.log(data)
   switch (menuKey) {
     case "1":
       break
@@ -390,7 +373,7 @@ function onContextMenuClick(treeKey, menuKey, title, type) {
         cancelText: '取消',
         async onOk() {
           await deleteFolder({id: treeKey})
-          deleteTreeDataNode(treeKey, filePathTree.value)
+          deleteTreeDataNode(treeKey, folderTree.value)
         },
         onCancel() {
           console.log('Cancel');

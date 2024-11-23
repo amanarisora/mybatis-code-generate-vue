@@ -229,24 +229,6 @@ const computedExtensions = computed(() => {
   ];
 });
 
-const extensions = [
-  basicSetup,
-  search({top: true}),
-  customCompletion,
-  sql(),
-  oneDark,
-  EditorView.theme({
-    '&': {
-      fontSize: '20px', // 修改字体大小
-      fontFamily: 'Microsoft YaHei',
-    },
-  }),
-  keymap.of([
-    ...defaultKeymap.filter(key => key.key !== 'Tab'), // 移除默认的 Tab 行为
-    ...completionKeymap, // 添加自动补全的快捷键
-    {key: 'Tab', run: acceptCompletion}, // 将 Tab 键绑定到自动补全
-  ]),
-];
 //endregion
 
 async function save(){

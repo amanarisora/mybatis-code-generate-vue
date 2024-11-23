@@ -1,8 +1,8 @@
-class DualIndexMap<T, B extends object>{
+export class DualIndexMap<T, B extends object>{
     private idMap: Map<T, B>;
     private secIndexMap: Map<T, Set<B>>;
-    private paramName:string;
-    private keyName:string;
+    private readonly paramName:string;
+    private readonly keyName:string;
     constructor(keyName,paramName) {
         this.idMap = new Map(); // 用于通过唯一 ID 查找对象
         this.secIndexMap = new Map(); // 用于通过 paramName 查找对象

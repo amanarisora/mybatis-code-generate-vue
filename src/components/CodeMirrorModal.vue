@@ -21,7 +21,6 @@ import {EditorView} from '@codemirror/view';
 
 import { basicSetup } from "codemirror";
 import {autocompletion, completeFromList} from '@codemirror/autocomplete';
-import { foldGutter, foldKeymap } from '@codemirror/fold';
 import { searchKeymap, search } from '@codemirror/search';
 import {java} from '@codemirror/lang-java';
 import {ref} from "vue";
