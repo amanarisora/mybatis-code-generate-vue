@@ -13,7 +13,8 @@
       <a-layout-sider class="sider" :width="siderWidth" style="background-color: rgba(24,24,24,0.5);height: 100%;overflow: auto;overflow-x: hidden;">
 
         <div style="position: relative;height: 100%;">
-          <DatasourceTree @openTerminal="openTerminal" @openNewQuery="openNewQuery"
+          <DatasourceTree style="padding-top: 10px;width: 100%;height: 100%"
+                          @openTerminal="openTerminal" @openNewQuery="openNewQuery"
                           @updateTabListWhenDatasourceClosed="updateTabListWhenDatasourceClosed"
                           @updateTabListWhenDatabaseClosed="updateTabListWhenDatabaseClosed"/>
           <div class="resizer" @mousedown="startResize"></div>

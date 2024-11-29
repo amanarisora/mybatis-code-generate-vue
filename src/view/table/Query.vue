@@ -12,10 +12,13 @@
       <a-space style="padding: 5px 0 5px 0">
         <customSelect v-model:value="datasourceName" :options="datasourceData">
           <template #prefixIcon>
-            <MysqlOnSmall class="mysql-icon-small" />
+            <MysqlOnSmall v-if="getDatasourceObj(datasourceName)?getDatasourceObj(datasourceName).data.datasourceType==0:false"
+                          class="mysql-icon-small" />
+            <SqliteOnSmall v-else-if="getDatasourceObj(datasourceName)?getDatasourceObj(datasourceName).data.datasourceType==1:false" class="mysql-icon-small"/>
           </template>
-          <template #itemIcon>
-            <MysqlOnSmall class="mysql-icon-small" />
+          <template #itemIcon="{option}">
+            <MysqlOnSmall v-if="option.datasourceType==0" class="mysql-icon-small" />
+            <SqliteOnSmall v-else-if="option.datasourceType==1" class="mysql-icon-small"/>
           </template>
         </customSelect>
         <customSelect v-model:value="databaseName" :options="databaseData">
@@ -43,7 +46,6 @@
             style="height: 100%"
             v-model="templateContent"
             :extensions="computedExtensions"
-            class="codemirror-container"
         />
       </Pane>
       <pane :min-size="10" >
@@ -75,7 +77,8 @@ import {useGlobalStore} from "@/store/globalStore";
 import {message, theme} from "ant-design-vue";
 import QueryResult from "@/view/table/QueryResult.vue";
 import SaveQueryMadal from "@/view/table/SaveQueryMadal.vue";
-import {reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
+import {getDatasourceObj, reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
+import SqliteOnSmall from "@/assets/sqlite-on-small.svg";
 
 const showObjStore = useShowObjStore()
 
@@ -124,8 +127,10 @@ onMounted(() => {
     optionsSet.add({ label: key, type: 'text' })
     datasourceData.value.push({
       value: key,
-      label: key
+      label: key,
+      datasourceType: value.data.datasourceType,
     });
+    console.log("111",value.data.datasourceType)
   });
   const childMap = showObjStore.treeDataMap.get(props.datasourceName)?.childMap;
   if (childMap) {
@@ -154,13 +159,13 @@ onMounted(() => {
 });
 
 watch(datasourceName,async (value, oldValue)=>{
-  if(!isInitialized){
+  if(isInitialized){
     if(showObjStore.treeDataMap.has(value)){
       let childMap = showObjStore.treeDataMap.get(value).childMap
       if (childMap){
         console.log(childMap.size)
         if (childMap.size == 0){
-          await reloadDatabase(value)
+          await reloadDatabase(value,showObjStore.treeDataMap.get(value).data.datasourceType)
           childMap = showObjStore.treeDataMap.get(value).childMap
         }
         databaseData.value = []
@@ -171,7 +176,7 @@ watch(datasourceName,async (value, oldValue)=>{
             label: key
           });
         });
-        databaseName.value = databaseData.value[0]
+        databaseName.value = databaseData.value[0].label
       }
     }
   }

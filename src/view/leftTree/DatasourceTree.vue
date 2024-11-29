@@ -1,5 +1,5 @@
 <template>
-  <div style="padding-top: 10px;width: 100%;">
+  <div>
     <a-tree
         style="font-size: 15px"
         :tree-data="showObjStore.datasourceTreeData"
@@ -12,8 +12,10 @@
       <template #title="{data,title,key,type,children}">
         <a-dropdown :trigger="['contextmenu']">
           <div class="tree-node-title">
-            <MysqlOnSmall v-if="type==0&&children.length>0" class="mysql-icon-small" style="float: left;"/>
-            <MysqlOffSmall v-else-if="type==0&&children.length==0" class="mysql-icon-small" style="float: left;"/>
+            <MysqlOnSmall v-if="type==0&&data.datasourceType==0&&children.length>0" class="mysql-icon-small" style="float: left;"/>
+            <MysqlOffSmall v-else-if="type==0&&data.datasourceType==0&&children.length==0" class="mysql-icon-small" style="float: left;"/>
+            <SqliteOnSmall v-else-if="type==0&&data.datasourceType==1&&children.length>0" class="mysql-icon-small" style="float: left;"/>
+            <SqliteOffSmall v-else-if="type==0&&data.datasourceType==1&&children.length==0" class="mysql-icon-small" style="float: left;"/>
             <DatabaseOnSmall v-else-if="type==1&&children.length>0" class="mysql-icon-small" style="float: left;"/>
             <DatabaseOffSmall v-else-if="type==1&&children.length==0" class="mysql-icon-small" style="float: left;"/>
             <TableSmall v-else-if="type==2 || type ==3" class="mysql-icon-small" style="float: left;"/>
@@ -22,14 +24,12 @@
               <template #title>
                 <span>{{ title }}</span>
               </template>
-              <span v-if="!editingKey || editingKey !== key" class="tree-node-text"
-                    :style="{maxWidth:maxWidth+'px'}">{{ title }}</span>
-              <a-input ref="editInput" v-else type="text" v-model:value="editTitle" @blur="submitEdit(data)"
-                       @keyup.enter="submitEdit(data)"/>
+              <CanEditSpan :submit="(editText)=>submitEdit(editText,data)" :span-class="'tree-node-text'"
+                           :style="{width:spanWidth+'px'}"
+                           :text="title" :is-editing="editingKey == key"/>
             </a-tooltip>
-            <span v-if="type!=2 && (!editingKey || editingKey !== key)" class="tree-node-text">{{ title }}</span>
-            <a-input ref="editInput" v-else-if="type!=2" type="text" v-model:value="editTitle" @blur="submitEdit(data)"
-                     @keyup.enter="submitEdit(data)"/>
+            <CanEditSpan v-if="type!=2" :submit="(editText)=>submitEdit(editText,data)" :span-class="'tree-node-text'"
+                         :text="title" :is-editing="editingKey == key"/>
           </div>
           <template #overlay>
             <a-menu @click="({ key: menuKey }) => handleMenuClick(data,key, menuKey,title,type)">
@@ -59,14 +59,14 @@
               style="margin-left: 80%">
       <PlusCircleOutlined/>
     </a-button>
-
+    <AddOrEditDataSourceModal v-model:open="openAddDatasource" v-model:is-add="isAddDatasource"
+                              :editFormData="editDatasourceFormData"
+                              @reloadDataSourceList="reloadDataSourceList"
+                              @editReloadDataSourceList="editReloadDataSourceList"/>
+    <CreateDatabaseModal v-model:open="openAddDatabase" :ds="createDataBaseDs" @reloadDataSourceList="reloadDatabase"/>
   </div>
 
-  <AddOrEditDataSourceModal v-model:open="openAddDatasource" v-model:is-add="isAddDatasource"
-                            :editFormData="editDatasourceFormData"
-                            @reloadDataSourceList="reloadDataSourceList"
-                            @editReloadDataSourceList="editReloadDataSourceList"/>
-  <CreateDatabaseModal v-model:open="openAddDatabase" :ds="createDataBaseDs" @reloadDataSourceList="reloadDatabase"/>
+
 </template>
 
 <script setup lang="ts">
@@ -82,6 +82,8 @@ import {ExclamationCircleOutlined, PlusCircleOutlined} from "@ant-design/icons-v
 import AddOrEditDataSourceModal from "@/view/leftTree/AddOrEditDataSourceModal.vue";
 import MysqlOffSmall from '@/assets/mysql-off-small.svg'
 import MysqlOnSmall from '@/assets/mysql-on-small.svg'
+import SqliteOnSmall from '@/assets/sqlite-on-small.svg'
+import SqliteOffSmall from '@/assets/sqlite-off-small.svg'
 import DatabaseOffSmall from '@/assets/database-off-small.svg'
 import DatabaseOnSmall from '@/assets/database-on-small.svg'
 import TableSmall from '@/assets/table-small.svg'
@@ -93,20 +95,21 @@ import throttle from 'lodash/throttle';
 import {useShowObjStore} from "@/store/showObjStore";
 import {generateUUID} from "@/ts/interfaces";
 import {deleteQuery} from "@/view/table/tableAboutApi";
-import {reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
+import {getDatasourceObj, getDatasourceTypeByName, reloadDatabase, reloadQuery} from "@/view/leftTree/leftTree";
 import {openGenerate, openQuery, openTableData} from "@/view/common/commonFunc";
+import CanEditSpan from "@/view/common/CanEditSpan.vue";
 
 
 onMounted(async () => {
   await reloadDataSourceList()
 })
 const globalStore = useGlobalStore()
-const maxWidth = ref(globalStore.indexWidth - 104)
+const spanWidth = ref(globalStore.indexWidth - 114)
 
 watch(
     () => globalStore.indexWidth,
-    (newValue, oldValue) => {
-      maxWidth.value = newValue - 104
+    (value) => {
+      spanWidth.value = value - 114
     }
 );
 
@@ -118,7 +121,7 @@ const createDataBaseDs = ref("")
 const datasourceSelectedKeys: any = ref([])
 const datasourceExpandKeys: any = ref([])
 
-const editTitle = ref('')
+
 const editInput = ref()
 const editingKey = ref<string | null>(null);
 
@@ -187,7 +190,7 @@ async function handleDoubleClick(e, node) {
   switch (node.type) {
     case 0:
       if (node.children.length == 0) {
-        await reloadDatabase(node.datasourceName)
+        await reloadDatabase(node.datasourceName,node.datasourceType)
         if (!datasourceExpandKeys.value.includes(node.key)) {
           datasourceExpandKeys.value = [...datasourceExpandKeys.value,node.key]
         }
@@ -196,7 +199,7 @@ async function handleDoubleClick(e, node) {
       break
     case 1:
       if (node.children.length == 0) {
-        await reloadTableList(node.parentId, node.title)
+        await reloadTableList(node.parentId, node.title,getDatasourceTypeByName(node.parentId))
         if (!datasourceExpandKeys.value.includes(node.key)) {
           datasourceExpandKeys.value = [...datasourceExpandKeys.value,node.key]
         }
@@ -248,11 +251,12 @@ async function editReloadDataSourceList(title: string) {
   await reloadDataSourceList()
 }
 
-async function reloadTableList(datasourceName: string, databaseName: string) {
+async function reloadTableList(datasourceName: string, databaseName: string, datasourceType:number) {
   const data: any = await getAllTableList({
     user: useGlobalStore().loginUser,
     ds: datasourceName,
     databaseName: databaseName,
+    datasourceType: datasourceType
   });
 
   if (data.code === 200) {
@@ -370,20 +374,14 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
       break
     case 'rename':
       editingKey.value = key;
-      editTitle.value = title;
-      await nextTick(() => {
-        if (editInput.value) {
-          editInput.value.focus();
-        }
-      });
       break
     case 'reload':
       switch (type) {
         case 0:
-          await reloadDatabase(title)
+          await reloadDatabase(title,data.datasourceType)
           break
         case 1:
-          await reloadTableList(data.parentId, title)
+          await reloadTableList(data.parentId, title,getDatasourceTypeByName(data.parentId))
           break
         case 4:
           await reloadQuery(data.datasourceName, data.parentId)
@@ -394,22 +392,21 @@ async function dropdown(data: any, key: string, menuKey: string, title: string, 
   }
 }
 
-async function submitEdit(data) {
-  if (data.title == editTitle.value || editTitle.value == '') {
+async function submitEdit(editText,data) {
+  if (data.title == editText || editText == '') {
     editingKey.value = null;
-    editTitle.value = '';
     return
   }
   console.log(data)
   if (data.type == 0) {
-    const result = await renameDataSource({id: data.id, datasourceName: editTitle.value})
+    const result = await renameDataSource({id: data.id, datasourceName: editText})
     if (result.code == 200) {
       const item = showObjStore.treeDataMap.get(data.title)
       showObjStore.treeDataMap.delete(data.title)
-      item.data.title = editTitle.value
-      showObjStore.treeDataMap.set(editTitle.value, item)
+      item.data.title = editText
+      showObjStore.treeDataMap.set(editText, item)
       item.childMap.forEach((value, key) => {
-        value.parentId = editTitle.value
+        value.parentId = editText
       })
       message.success("重命名成功！")
     }
@@ -474,7 +471,7 @@ function deleteTreeNode(data: any, key: string, menuKey: string, title: string, 
           if (result.code == 200) {
             message.success("删除成功")
           }
-          await reloadDatabase(data.parentId)
+          await reloadDatabase(data.parentId,getDatasourceObj(data.parentId).datasourceType)
         },
         onCancel() {
         },
@@ -502,7 +499,7 @@ function deleteTreeNode(data: any, key: string, menuKey: string, title: string, 
           if (result.code == 200) {
             message.success("删除成功")
           }
-          await reloadTableList(data.datasourceName, data.parentId)
+          await reloadTableList(data.datasourceName, data.parentId,getDatasourceTypeByName(data.datasourceName))
         },
         onCancel() {
         },
@@ -511,9 +508,7 @@ function deleteTreeNode(data: any, key: string, menuKey: string, title: string, 
 }
 
 //region -----重载数据方法-----
-function getDatasourceObj(title: string) {
-  return showObjStore.treeDataMap.get(title)
-}
+
 
 function getDatabaseObj(parentTitle: string, title: string) {
   return showObjStore.treeDataMap.get(parentTitle).childMap.get(title)

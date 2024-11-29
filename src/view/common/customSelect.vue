@@ -18,7 +18,7 @@
             :title="option.label"
         >
           <div class="tree-node-title">
-            <slot name="itemIcon" style="float: left;"/>
+            <slot name="itemIcon" :option="option" style="float: left;"/>
             <span class="tree-node-text">{{ option.label }} </span>
           </div>
 
@@ -36,7 +36,6 @@ const value = defineModel("value")
 
 const props = defineProps({
   options: {
-    type: Array,
     required: true,
     default: () => [],
   },

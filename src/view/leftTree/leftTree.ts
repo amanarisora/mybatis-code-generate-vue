@@ -2,6 +2,7 @@ import {getAllDataBases} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {useShowObjStore} from "@/store/showObjStore";
 import {getAllQueryInDatabase} from "@/view/table/tableAboutApi";
+import {generateUUID} from "@/ts/interfaces";
 
 export const stepItems = [
     {
@@ -23,24 +24,36 @@ export const DatasourceTypeListItems = [
     }
 ]
 
-export const reloadDatabase = async (datasourceName: string) => {
-    const data: any = await getAllDataBases({user: useGlobalStore().loginUser, ds: datasourceName})
-    if (data.code == 200) {
-        const dataObject = useShowObjStore().treeDataMap.get(datasourceName)
-        data.result.forEach(item=>{
-            const databaseItem = dataObject.childMap.get(item.title)
-            if (databaseItem) {
-                item.children = databaseItem.children
-            }
-        })
-        dataObject.data.children = data.result
-
-        let tempChildMap = new Map()
-        data.result.forEach((item) => {
-            tempChildMap.set(item.title, item)
-        })
-        dataObject.childMap = tempChildMap
+export const reloadDatabase = async (datasourceName: string,datasourceType:number) => {
+    let data: any = {}
+    if (datasourceType === 1) {
+        data.result = [{
+            key: generateUUID(),
+            title: 'main',
+            type: 1,
+            parentId: datasourceName,
+            children: []
+        }]
+    }else {
+        data = await getAllDataBases({user: useGlobalStore().loginUser, ds: datasourceName})
+        if (data.code != 200) {
+            return
+        }
     }
+    const dataObject = useShowObjStore().treeDataMap.get(datasourceName)
+    data.result.forEach(item=>{
+        const databaseItem = dataObject.childMap.get(item.title)
+        if (databaseItem) {
+            item.children = databaseItem.children
+        }
+    })
+    dataObject.data.children = data.result
+
+    let tempChildMap = new Map()
+    data.result.forEach((item) => {
+        tempChildMap.set(item.title, item)
+    })
+    dataObject.childMap = tempChildMap
 }
 
 export const reloadQuery = async (datasourceName: string,databaseName: string) => {
@@ -73,4 +86,13 @@ export const reloadQuery = async (datasourceName: string,databaseName: string) =
             }
         }
     }
+}
+
+export function getDatasourceObj(title: string) {
+    const showObjStore = useShowObjStore()
+    return showObjStore.treeDataMap.get(title)
+}
+export function getDatasourceTypeByName(title: string) {
+    const showObjStore = useShowObjStore()
+    return showObjStore.treeDataMap.get(title).data.datasourceType
 }

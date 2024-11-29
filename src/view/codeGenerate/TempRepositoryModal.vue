@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="props.open" title="模板资源库" @cancel="emit('update:open',false)"
-           style="top: 20px; padding: 0; max-height: 100vh; width: 80% ">
-    <a-card :tab-list="tabList" :active-tab-key="key" @tabChange="onTabChange"
+           style="top: 20px; padding: 0; max-height: 100vh; width: 80% " @ok="submit">
+    <a-card :tab-list="tabList" :active-tab-key="tabActiveKey" @tabChange="onTabChange"
             :bodyStyle="{ padding: '10px 0 0 0' ,height: 'calc(100vh - 208px)' }"
             style="height: calc(100vh - 150px);overflow: auto;background: rgba(0,0,0,0); ">
       <template #tabBarExtraContent>
@@ -19,7 +19,7 @@
               上传模板
             </a-button>
           </a-upload>
-          <a-button type="primary">
+          <a-button type="primary" @click="reloadChildrenFolderAndFileList(globalStore.loginUser,currentFileType,filePathSelectedKeys[0])">
             <ReloadOutlined/>
           </a-button>
         </a-space>
@@ -27,14 +27,18 @@
       <a-layout style="width: 100%;height: 100%;background-color: rgba(24,24,24,0);">
         <a-layout-header style="background: rgb(0,0,0,0);">
           <a-row>
-            <a-button :disabled="backStack.size()==0" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small"
+            <a-button :disabled="backStack.size()==0" type="ghost"
+                      style="display: flex;align-items: center;justify-content: center" size="small"
                       @click="historyBack">
               <arrow-left-small :style="{color: backStack.size()==0?'darkgray':'white'}"/>
             </a-button>
-            <a-button :disabled="forwardStack.size()==0" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small" @click="historyForward">
+            <a-button :disabled="forwardStack.size()==0" @click="historyForward"
+                      type="ghost" style="display: flex;align-items: center;justify-content: center" size="small">
               <arrow-right-small :style="{color: forwardStack.size()==0?'darkgray':'white'}"/>
             </a-button>
-            <a-button :disabled="filePathSelectedRow.parentId==null" type="ghost" style="display: flex;align-items: center;justify-content: center" size="small" @click="goToParentFolder">
+            <a-button :disabled="filePathSelectedRow.parentId==null" type="ghost"
+                      style="display: flex;align-items: center;justify-content: center" size="small"
+                      @click="goToParentFolder">
               <arrow-top-small :style="{color: filePathSelectedRow.parentId==null?'darkgray':'white'}"/>
             </a-button>
           </a-row>
@@ -55,17 +59,18 @@
             >
               <template #title="{ title, key: treeKey,type,data }">
                 <a-dropdown :trigger="['contextmenu']">
-                  <a-space>
-                    <FolderTree style="margin-top: 7px"/>
-                    <span v-if="!editingKey || editingKey !== treeKey">{{ title }}</span>
-                    <a-input ref="editInput" v-else type="text" v-model:value="editTitle" @blur="submitEdit(data)"
-                             @keyup.enter="submitEdit(data)"/>
-                  </a-space>
+                  <div>
+                    <a-space>
+                      <FolderTree style="margin-top: 7px"/>
+                      <CanEditSpan :submit="(editText)=>submitEdit(editText,data)"
+                                   :text="title" :is-editing="editingKey == treeKey"/>
+                    </a-space>
+                  </div>
                   <template #overlay>
                     <a-menu @click="({ key: menuKey }) => onContextMenuClick(treeKey, menuKey,title,type)">
-                      <a-menu-item key="1" :disabled="type == 2">新建子文件</a-menu-item>
-                      <a-menu-item key="2" :disabled="type == -1">重命名</a-menu-item>
-                      <a-menu-item key="3" :disabled="type == -1" :style="{color: type==-1?'lightgray':'lightcoral'}">
+                      <a-menu-item key="addChildrenFolder" >新建子文件</a-menu-item>
+                      <a-menu-item key="rename" >重命名</a-menu-item>
+                      <a-menu-item key="delete" :style="{color: type==-1?'lightgray':'lightcoral'}">
                         删除
                       </a-menu-item>
                     </a-menu>
@@ -77,28 +82,38 @@
           </a-layout-sider>
           <a-layout-content
               style="padding: 20px 10px 10px 10px;position: relative;height: 100%;width: 100%;overflow: auto;background-color: rgba(24,24,24,0)"
-              @click="()=>{selectedRowKeys = [];selectedRowKeysSet.clear();selectedRow = []}">
+              @click="cleanFileSelect">
             <a-list ref="list" :grid="{ gutter: 20, xs: 1, sm: 1, md: 1, lg: 2, xl: 4, xxl: xxlNum }"
                     :data-source="fileAndFolderDataList">
               <template #renderItem="{ item }">
                 <a-list-item>
                   <a-list-item-meta>
                     <template #title>
-                      <div class="file-item" :style="{ backgroundColor: selectedRowKeysSet.has(item.id) ? '#749ec2' : 'inherit',
-                       border: selectedRowKeysSet.has(item.id) ? '1px solid #1890ff' : '0px solid #e8e8e8',
-                       borderRadius: '7px'}" @click.stop="clickFileList(item)" @dblclick="dbClickFileList(item)"
-                      >
-                        <a-col>
-                          <a-row class="icon-row">
-                            <Idea v-if="!item.folderName"/>
-                            <Folder v-else-if="item.fileNum == 0"/>
-                            <FolderWithFiles v-else/>
-                          </a-row>
-                          <a-row class="text-row">
-                            <span>{{ item.folderName ? item.folderName : item.fileName }}</span>
-                          </a-row>
-                        </a-col>
-                      </div>
+                      <a-dropdown :trigger="['contextmenu']">
+                        <div class="file-item" :style="{ backgroundColor: selectedRowKeys.includes(item.id) ? '#749ec2' : 'inherit',
+                        border: selectedRowKeys.includes(item.id) ? '1px solid #1890ff' : '0px solid #e8e8e8',borderRadius: '7px',
+                        margin: selectedRowKeys.includes(item.id) ? '-1px':'0'}"
+                             @click.stop="clickFileList(item)" @dblclick="dbClickFileList(item)"
+                             @contextmenu="fileListRightClick(item)"
+                        >
+                          <a-col>
+                            <a-row class="icon-row">
+                              <Idea v-if="item.isFile"/>
+                              <Folder v-else-if="item.isEmpty"/>
+                              <FolderWithFiles v-else/>
+                            </a-row>
+                            <a-row class="text-row">
+                              <span>{{ item.title }}</span>
+                            </a-row>
+                          </a-col>
+                        </div>
+                        <template #overlay>
+                          <a-menu @click="({key}) => handleMenuClick(data,id, key,groupName)">
+                            <a-menu-item key="rename" >重命名</a-menu-item>
+                          </a-menu>
+                        </template>
+                      </a-dropdown>
+
                     </template>
                   </a-list-item-meta>
                 </a-list-item>
@@ -108,17 +123,44 @@
         </a-layout>
       </a-layout>
     </a-card>
+
+    <CodeMirrorModal v-model:open="openCodeMirror" :temp-id="currentTempId"/>
+
+    <a-modal centered v-model:open="openAddChildrenFolder" title="新建文件夹"
+             @cancel="openAddChildrenFolder=false" ok-text="新建" @ok="saveAsNewTempGroup">
+      <a-form :model="folderNameFormData" ref="folderNameForm"
+              :label-col="{ span: 4 }"
+              :wrapper-col="{ span: 20 }"
+              autocomplete="off">
+        <a-form-item label="文件夹名"
+                     name="folderName"
+                     :rules="[{ required: true, message: '需要文件夹名!',trigger: 'blur' }]"
+        >
+          <a-input v-model:value="folderNameFormData.folderName" style="width: 300px;">
+            <template #prefix>
+              <FolderTree />
+            </template>
+          </a-input>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </a-modal>
 </template>
 <script setup lang="ts">
 import {tabKeyToValueMap, tabList, ValueToTabKeyMap} from "@/ts/interfaces";
-import {onMounted, ref, h, nextTick, onBeforeUnmount, watch, onUpdated, computed, reactive} from "vue";
+import {
+  onMounted,
+  ref,
+  h,
+  nextTick,
+  watch,
+  reactive,
+  getCurrentInstance
+} from "vue";
 import {
   deleteFolder,
-  editFolderName,
+  editFolderName, getAllFolderTree,
   getChildrenFolderAndFileList,
-  getFolderTree,
-  getTempFileList,
   uploadTempFile
 } from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
@@ -134,11 +176,18 @@ import ArrowTopSmall from "@/assets/arrow-top-small.svg"
 import {FileStack} from "@/view/common/FileStack";
 import {historyObj} from "@/view/codeGenerate/codeGenerate";
 import {DualIndexMap} from "@/view/common/DualIndexMap";
+import CodeMirrorModal from "@/view/codeGenerate/CodeMirrorModal.vue";
+import CanEditSpan from "@/view/common/CanEditSpan.vue";
+import ViGridSmall from "@/assets/visualization-grid-small.svg";
 
-const props = defineProps({open: Boolean});
-const emit = defineEmits(['update:open']);
-const key = ref('Controller')
+const props = defineProps({open: Boolean, fileType: Number});
+const emit = defineEmits(['update:open', 'submit']);
+const instance: any = getCurrentInstance();
+const tabActiveKey = ref('Controller')
+let currentFileType:number = 1
 const globalStore = useGlobalStore();
+
+const openCodeMirror = ref(false)
 
 const isUploading = ref(false)
 const fileList: any = ref()
@@ -146,10 +195,10 @@ const realFileList: any = ref([])
 
 const folderTree: any = ref([])
 const filePathSelectedKeys: any = ref([])
-const filePathSelectedRow: any = ref({id:null,type:null,parentId:null})
+const filePathSelectedRow: any = ref({id: null, type: null, parentId: null})
 const filePathExpandKeys: any = ref([])
-const fileAndFolderDataList:any = ref([])
-const fileAndFolderDataMap = new DualIndexMap<string,any>('id','parentId')
+const fileAndFolderDataList: any = ref([])
+const fileAndFolderDataMap = new DualIndexMap<string, any>('id', 'parentId')
 const list = ref()
 const xxlNum = ref(6)
 
@@ -159,7 +208,9 @@ const forwardStack = reactive(new FileStack<historyObj>(10));
 
 const selectedRowKeys: any = ref([])
 const selectedRowKeysSet: any = ref(new Set())
-const selectedRow: any = ref([])
+const selectedRows: any = ref([])
+
+const currentTempId = ref('')
 
 
 let listClickTimeOut: number | null = null
@@ -168,9 +219,7 @@ function clickFileList(item) {
   if (listClickTimeOut) {
     clearTimeout(listClickTimeOut)
   }
-  selectedRowKeys.value = []
-  selectedRowKeys.value.push(item.id)
-  selectedRowKeysSet.value = new Set(selectedRowKeys.value)
+  selectOneFile(item)
   listClickTimeOut = window.setTimeout(() => {
     console.log("单击文件触发")
   }, 300)
@@ -181,14 +230,37 @@ async function dbClickFileList(item) {
     clearTimeout(listClickTimeOut)
   }
   console.log("双击触发")
-  if (item.folderName) {
+  console.log("文件", item)
+  if (!item.isFile) {
     await reloadChildrenFolderAndFileList(globalStore.loginUser, item.type, item.id);
     filePathSelectedKeys.value = [item.id]
+    filePathExpandKeys.value.push(item.id)
     backStack.push(filePathSelectedRow.value)
-    filePathSelectedRow.value = {type: item.type, id: item.id,parentId:item.parentId}
-    console.log(filePathSelectedRow.value)
+    filePathSelectedRow.value = {type: item.type, id: item.id, parentId: item.parentId}
     forwardStack.clear()
+  } else {
+    currentTempId.value = item.id
+    openCodeMirror.value = true
   }
+}
+
+function fileListRightClick(item){
+  if (selectedRows.value.length <= 1) {
+    selectOneFile(item)
+  }
+}
+
+function selectOneFile(item){
+  selectedRowKeys.value = []
+  selectedRowKeys.value.push(item.id)
+  selectedRows.value = [item]
+  selectedRowKeysSet.value = new Set(selectedRowKeys.value)
+}
+
+function cleanFileSelect() {
+  selectedRowKeys.value = []
+  selectedRows.value = []
+  selectedRowKeysSet.value.clear()
 }
 
 async function historyBack() {
@@ -197,7 +269,7 @@ async function historyBack() {
     try {
       await reloadChildrenFolderAndFileList(globalStore.loginUser, item.type, item.id);
       forwardStack.push(filePathSelectedRow.value)
-      filePathSelectedKeys.value = [item.id==''?ValueToTabKeyMap.get(item.type):item.id]
+      filePathSelectedKeys.value = [item.id]
       filePathSelectedRow.value = item
     } catch (e) {
       backStack.push(item)
@@ -207,13 +279,11 @@ async function historyBack() {
 
 async function historyForward() {
   const item = forwardStack.pop()
-  console.log(item)
-  console.log(forwardStack.size())
   if (item) {
     try {
       await reloadChildrenFolderAndFileList(globalStore.loginUser, item.type, item.id);
       backStack.push(filePathSelectedRow.value)
-      filePathSelectedKeys.value = [item.id==''?ValueToTabKeyMap.get(item.type):item.id]
+      filePathSelectedKeys.value = [item.id]
       filePathSelectedRow.value = item
     } catch (e) {
       forwardStack.push(item)
@@ -221,37 +291,54 @@ async function historyForward() {
   }
 }
 
-async function goToParentFolder(){
+async function goToParentFolder() {
   backStack.push(filePathSelectedRow.value)
   await reloadChildrenFolderAndFileList(globalStore.loginUser, filePathSelectedRow.value.type, filePathSelectedRow.value.parentId);
   const parentItem = fileAndFolderDataMap.getById(filePathSelectedRow.value.parentId)
-  filePathSelectedRow.value = {id: parentItem.type == -1?'':parentItem.key,type:parentItem.which,parentId:parentItem.parentId}
-  console.log(filePathSelectedRow.value)
+  filePathSelectedRow.value = {id: parentItem.id, type: parentItem.type, parentId: parentItem.parentId}
+  filePathSelectedKeys.value = [parentItem.id]
   forwardStack.clear()
 }
 
 
-
 onMounted(async () => {
-  await reloadChildrenFolderAndFileList(globalStore.loginUser)
-  await getChildrenFolderAndFileList({username: globalStore.loginUser,fileType: 1,parentId:''})
+  const data: any = await getAllFolderTree({username: globalStore.loginUser})
+  folderTree.value = data.result
+  folderTree.value.forEach(item => {
+    fileAndFolderDataMap.set(item.id, item)
+  })
+  await reloadChildrenFolderAndFileList(globalStore.loginUser, 1, 'Controller')
   filePathSelectedRow.value = folderTree.value[0]
   filePathExpandKeys.value = [folderTree.value[0].key]
   filePathSelectedKeys.value = [folderTree.value[0].key]
 })
-
-async function reloadChildrenFolderAndFileList(username: string, fileType?: number, parentId?: string){
-  const folderAndFileList: any = await getChildrenFolderAndFileList({username: username,fileType: fileType,parentId:parentId})
-  const folderList:any = folderAndFileList.result.folderList
-  const fileList:any = folderAndFileList.result.fileList
-  fileAndFolderDataList.value = [...folderList,...fileList]
-  fileAndFolderDataList.value.forEach((item: any) => {
-    fileAndFolderDataMap.replaceAllBySecIndex(item.parentId, item)
+//刷新页面文件
+async function reloadChildrenFolderAndFileList(username: string, fileType?: number, parentId?: string) {
+  cleanFileSelect()
+  const folderAndFileList: any = await getChildrenFolderAndFileList({
+    username: username,
+    fileType: fileType,
+    parentId: parentId
   })
-  if(!parentId){
+  const folderList: any = folderAndFileList.result.folderList ? folderAndFileList.result.folderList : []
+  const fileList: any = folderAndFileList.result.fileList
+  fileAndFolderDataList.value = [...folderList, ...fileList]
+  fileAndFolderDataMap.replaceAllBySecIndex(parentId, fileAndFolderDataList.value)
+  if (!parentId) {
     folderTree.value = folderList
-  }else {
-    fileAndFolderDataMap.getById(parentId).children = folderList?folderList:[]
+  } else {
+    //保留节点的children
+    let tempMap = new Map()
+    folderList.forEach(item => {
+      tempMap.set(item.id, item)
+    })
+    fileAndFolderDataMap.getById(parentId).children.forEach(item => {
+      let temp = tempMap.get(item.id)
+      if (temp) {
+        temp.children = item.children
+      }
+    })
+    fileAndFolderDataMap.getById(parentId).children = folderList
   }
   folderTree.value.push({})
   folderTree.value.pop()
@@ -259,10 +346,12 @@ async function reloadChildrenFolderAndFileList(username: string, fileType?: numb
 
 let resizeObserver: ResizeObserver | null
 
-onUpdated(() => {
-  if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null
+watch(() => props.open, async (value) => {
+  if (!value) {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null
+    }
   } else {
     if (list.value) {
       resizeObserver = new ResizeObserver(entries => {
@@ -271,6 +360,16 @@ onUpdated(() => {
         }
       });
       resizeObserver.observe(list.value.$el);
+    }
+    if (props.fileType) {
+      const typeStr = ValueToTabKeyMap.get(props.fileType)
+      if (typeStr) {
+        await onTabChange(typeStr)
+      } else {
+        message.warn('参数异常,参数为：', props.fileType)
+      }
+
+
     }
   }
 })
@@ -285,26 +384,40 @@ async function tempUpload(file) {
     realFileList.value.forEach(f => {
       formData.append("files", f.file)
     })
-    const fileType: any = tabKeyToValueMap.get(key.value)
     formData.append('username', globalStore.loginUser)
-    formData.append('fileType', fileType)
+    formData.append('fileType', filePathSelectedRow.value.type)
+    formData.append('folderId', filePathSelectedRow.value.id)
     isUploading.value = true
     try {
       const data: any = await uploadTempFile(formData)
       if (data.code == 200) {
         message.success("上传成功")
       }
-      realFileList.value = []
-
+      await reloadChildrenFolderAndFileList(globalStore.loginUser, filePathSelectedRow.value.type, filePathSelectedRow.value.id)
+      data.result.forEach(id => {
+        selectedRows.value.push(fileAndFolderDataMap.getById(id))
+      })
+      selectedRowKeysSet.value = new Set(selectedRowKeys.value)
+      selectedRowKeys.value = data.result
     } finally {
+      realFileList.value = []
       isUploading.value = false
     }
   }
 }
 
-async function onTabChange(value) {
-  key.value = value
-  await getTempFileList({username: globalStore.loginUser, fileType: tabKeyToValueMap.get(key.value)});
+async function onTabChange(value: string) {
+  tabActiveKey.value = value
+  const type = tabKeyToValueMap.get(value)
+  if (type) {
+    currentFileType = type
+    await reloadChildrenFolderAndFileList(globalStore.loginUser, type, value);
+    const index = type - 1
+    filePathSelectedRow.value = folderTree.value[index]
+    filePathExpandKeys.value = [folderTree.value[index].key]
+    filePathSelectedKeys.value = [folderTree.value[index].key]
+  }
+
 }
 
 let clickTimeout: number | null = null;
@@ -317,13 +430,12 @@ function selectTree(keys, e) {
   // 设置一个新的定时器
   clickTimeout = window.setTimeout(async () => {
     const id = e.node.type == -1 ? '' : e.node.key
-    if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != e.node.which) {
+    if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != e.node.type) {
       backStack.push(filePathSelectedRow.value)
       forwardStack.clear()
     }
-    filePathSelectedRow.value = {id: id, type: e.node.which,parentId:e.node.parentId}
-    await reloadChildrenFolderAndFileList(globalStore.loginUser, e.node.which, e.node.type == -1 ? '' : e.node.key);
-    console.log(backStack)
+    filePathSelectedRow.value = {id: id, type: e.node.type, parentId: e.node.parentId}
+    await reloadChildrenFolderAndFileList(globalStore.loginUser, e.node.type, e.node.id);
   }, 300);
 
 }
@@ -334,13 +446,12 @@ async function handleDoubleClick(e, node) {
   }
   console.log("双击")
   const id = node.type == -1 ? '' : node.key
-  if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != node.which) {
+  if (filePathSelectedRow.value.id != id || filePathSelectedRow.value.type != node.type) {
     backStack.push(filePathSelectedRow.value)
     forwardStack.clear()
   }
-  filePathSelectedRow.value = {id: id, type: node.which, parentId:e.node.parentId}
-  await reloadChildrenFolderAndFileList(globalStore.loginUser, node.which, node.type == -1 ? '' : node.key);
-  console.log(backStack)
+  filePathSelectedRow.value = {id: id, type: node.type, parentId: node.parentId}
+  await reloadChildrenFolderAndFileList(globalStore.loginUser, node.type, node.id);
   if (!filePathExpandKeys.value.includes(node.key)) {
     filePathExpandKeys.value = [...filePathExpandKeys.value, node.key]
   } else {
@@ -350,20 +461,14 @@ async function handleDoubleClick(e, node) {
 
 
 function onContextMenuClick(treeKey, menuKey, title, type) {
-  console.log(treeKey)
   switch (menuKey) {
-    case "1":
+    case "addChildrenFolder":
+      openAddChildrenFolder.value = true
       break
-    case "2":
+    case "rename":
       editingKey.value = treeKey;
-      editTitle.value = title;
-      nextTick(() => {
-        if (editInput.value) {
-          editInput.value.focus();
-        }
-      });
       break
-    case "3":
+    case "delete":
       Modal.confirm({
         title: '删除文件夹',
         icon: h(ExclamationCircleOutlined),
@@ -376,11 +481,29 @@ function onContextMenuClick(treeKey, menuKey, title, type) {
           deleteTreeDataNode(treeKey, folderTree.value)
         },
         onCancel() {
-          console.log('Cancel');
         },
       });
       break
   }
+}
+
+const openAddChildrenFolder = ref(false)
+const folderNameForm = ref()
+const folderNameFormData = reactive({
+  folderName: ''
+})
+
+const editingKey = ref<string | null>(null);
+
+async function submitEdit(editText, data) {
+  if (data.title == editText || editText == '') {
+    editingKey.value = null;
+    return
+  }
+  await editFolderName({id: data.key, folderName: editText})
+  data.fileName = editText
+  data.title = editText
+  editingKey.value = null;
 }
 
 function deleteTreeDataNode(treeKey, treeData) {
@@ -399,27 +522,29 @@ function deleteTreeDataNode(treeKey, treeData) {
     treeData.splice(index, 1);
   }
   treeData.forEach(item => {
-    console.log(item)
     deleteTreeDataNode(treeKey, item.children)
   })
 }
 
-const editInput = ref()
-const editingKey = ref<string | null>(null);
-const editTitle = ref('');
 
-async function submitEdit(data) {
-  if (data.title == editTitle.value || editTitle.value == '') {
-    editingKey.value = null;
-    editTitle.value = '';
-    return
+function submit() {
+  const hasSubmitListener = instance.vnode.props && instance.vnode.props.onSubmit;
+  if (hasSubmitListener && props.fileType) {
+    if (selectedRows.value.length > 1) {
+      return message.warn("请选择单个模板")
+    }
+    if (selectedRows.value.length == 1 && selectedRows.value[0].type != props.fileType) {
+      return message.warn(`请选择一个${ValueToTabKeyMap.get(props.fileType)}模板`)
+
+    }
+    console.log("选择的文件", selectedRows.value)
+    emit("submit", props.fileType, selectedRows.value[0])
+    emit('update:open', false)
+  } else {
+    emit('update:open', false)
   }
-  await editFolderName({id: data.key, folderName: editTitle.value})
-  data.fileName = editTitle.value
-  data.title = editTitle.value
-  editingKey.value = null;
-  editTitle.value = '';
 }
+
 
 </script>
 
@@ -429,7 +554,7 @@ async function submitEdit(data) {
 }
 
 .file-item {
-  width: 140px; /* 设置合适的宽度 */
+  width: 120px; /* 设置合适的宽度 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -454,7 +579,7 @@ async function submitEdit(data) {
   font-size: 12px;
   display: -webkit-box;
   text-align: center;
-  -webkit-line-clamp: 4; /* 限制显示的行数 */
+  -webkit-line-clamp: 3; /* 限制显示的行数 */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;

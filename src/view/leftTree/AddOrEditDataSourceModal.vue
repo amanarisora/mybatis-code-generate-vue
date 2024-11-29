@@ -7,8 +7,8 @@
       <a-button :disabled="formData.datasourceType == null" type="primary" @click="submit">{{ currentStep == 0 ? '下一步' : '确定' }}</a-button>
 
     </template>
-    <a-layout style="background: rgba(0,0,0,0);width: 100%;height: 100%">
-      <a-layout-sider width="200" style="background: rgba(0,0,0,0);position: relative;border-right: 1px solid #494949;">
+    <a-layout style="background: transparent;width: 100%;height: 100%">
+      <a-layout-sider width="200" style="background: transparent;position: relative;border-right: 1px solid #494949;">
         <a-steps
             style="padding-top: 10px"
             direction="vertical"
@@ -48,60 +48,73 @@
           </template>
         </a-list>
         <div v-show="currentStep==1" style="display: flex; justify-content: center; height: 100%;">
-          <a-col>
-            <a-row class="icon-form">
+          <a-col style="width: 100%;">
+            <div style="display: flex; align-items: center; justify-content: center;">
               <Vite style="transform: scale(0.6)"/>
               <div class="divider"></div> <!-- 添加分隔线 -->
               <my-sql-on class="mysql-icon" style="transform: scale(0.6);" v-if=" formData.datasourceType == 0"/>
               <SqliteForm style="transform: scale(0.6);" v-else-if="formData.datasourceType == 1"/>
-            </a-row>
+            </div>
 
-            <a-form v-show="currentStep==1" ref="form"
-                    :model="formData"
-                    name="basic"
-                    :label-col="{ span: 4 }"
-                    :wrapper-col="{ span: 20 }"
-                    autocomplete="off"
-            >
-              <a-form-item
-                  label="连接名"
-                  name="datasourceName"
-                  :rules="[{ required: true, message: '需要连接名!',trigger: 'blur' }]"
+            <div style="display: flex; align-items: center; justify-content: center;">
+              <a-form v-show="currentStep==1" ref="form"
+                      :model="formData"
+                      name="basic"
+                      :style="{marginLeft: formData.datasourceType == 0?'0':'-80px'}"
+                      :label-col="{ span: formData.datasourceType == 0?4:6 }"
+                      :wrapper-col="{ span: formData.datasourceType == 0?20:18 }"
+                      autocomplete="off"
               >
-                <a-input v-model:value="formData.datasourceName" style="width: 300px;"/>
-              </a-form-item>
-              <a-form-item
-                  label="主机"
-                  name="ip"
-                  :rules="[{ required: true, message: '需要主机!',trigger: 'blur' }]"
-              >
-                <a-input v-model:value="formData.ip" style="width: 300px;"/>
-              </a-form-item>
-              <a-form-item
-                  label="端口"
-                  name="port"
-                  :rules="[{ required: true, message: '需要端口!',trigger: 'blur' }]"
-              >
-                <a-input-number v-model:value="formData.port" :controls="false" style="width: 100px;"/>
-              </a-form-item>
-              <a-form-item
-                  label="用户名"
-                  name="username"
-                  :rules="[{ required: true, message: '需要用户名!',trigger: 'blur' }]"
-              >
-                <a-input v-model:value="formData.username" style="width: 300px;"/>
-              </a-form-item>
-              <a-form-item
-                  label="密码"
-                  name="password"
-                  :rules="[{ required: true, message: '需要密码!',trigger: 'blur' }]"
-              >
-                <a-input-password v-model:value="formData.password" style="width: 300px;"/>
-              </a-form-item>
-              <a-form-item :wrapper-col="{ offset: 19, span: 6 }">
-                <a-button type="primary" :loading="testLoading" @click="testConnection">测试连接</a-button>
-              </a-form-item>
-            </a-form>
+                <a-form-item
+                    label="连接名"
+                    name="datasourceName"
+                    :rules="[{ required: true, message: '需要连接名!',trigger: 'blur' }]"
+                >
+                  <a-input v-model:value="formData.datasourceName" style="width: 300px;"/>
+                </a-form-item>
+                <a-form-item
+                    label="主机"
+                    name="ip"
+                    v-if="formData.datasourceType == 0"
+                    :rules="[{ required: true, message: '需要主机!',trigger: 'blur' }]"
+                >
+                  <a-input v-model:value="formData.ip" style="width: 300px;"/>
+                </a-form-item>
+                <a-form-item
+                    label="端口"
+                    name="port"
+                    v-if="formData.datasourceType == 0"
+                    :rules="[{ required: true, message: '需要端口!',trigger: 'blur' }]"
+                >
+                  <a-input-number v-model:value="formData.port" :controls="false" style="width: 100px;"/>
+                </a-form-item>
+                <a-form-item
+                    label="数据库文件"
+                    name="sqliteFilePath"
+                    v-if="formData.datasourceType == 1"
+                    :rules="[{ required: true, message: '需要现有数据库文件!',trigger: 'blur' }]"
+                >
+                  <a-input v-model:value="formData.sqliteFilePath" style="width: 300px;"/>
+                </a-form-item>
+                <a-form-item
+                    label="用户名"
+                    name="username"
+                    :rules="[{ required: formData.datasourceType == 0, message: '需要用户名!',trigger: 'blur' }]"
+                >
+                  <a-input v-model:value="formData.username" style="width: 300px;"/>
+                </a-form-item>
+                <a-form-item
+                    label="密码"
+                    name="password"
+                    :rules="[{ required: formData.datasourceType == 0, message: '需要密码!',trigger: 'blur' }]"
+                >
+                  <a-input-password v-model:value="formData.password" style="width: 300px;"/>
+                </a-form-item>
+                <a-form-item :wrapper-col="{ offset: 19, span: 6 }">
+                  <a-button type="primary" :loading="testLoading" @click="testConnection">测试连接</a-button>
+                </a-form-item>
+              </a-form>
+            </div>
           </a-col>
         </div>
       </a-layout-content>
@@ -120,6 +133,7 @@ import {addDataSource, editDataSource, testDataSourceConnection} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {message} from "ant-design-vue";
 import {areCommonPropertiesEqual} from "@/ts/interfaces";
+import fileListLine from "@/assets/file-list-line.svg"
 
 const props = defineProps({open: Boolean,isAdd:Boolean,editFormData:Object});
 const emit = defineEmits(['update:open','update:isAdd','reloadDataSourceList','editReloadDataSourceList']);
@@ -142,6 +156,7 @@ const initialFormData = {
   datasourceName: '',
   ip: '',
   port: '',
+  sqliteFilePath:'',
   username: '',
   password: '',
   datasourceType: null
@@ -240,13 +255,10 @@ function cancel(){
   text-overflow: ellipsis;
 }
 
-.icon-form {
-  display: flex;
-  align-items: center;
-}
 
 :deep(input) {
   color-scheme: dark !important;
 }
+
 
 </style>

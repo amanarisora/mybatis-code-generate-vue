@@ -4,7 +4,7 @@ export enum Api {
     getAllTableList = '/getAllTableList',
     getAllDataSource = '/getAllDataSource',
     getAllDataBases = '/getAllDataBases',
-    getChildrenFolderAndFileList = '/getChildrenFolderAndFileList',
+    getChildrenFolderAndFileList = '/tempFile/getChildrenFolderAndFileList',
     addDataSource = '/addDataSource',
     createDatabase = '/createDatabase',
     renameDataSource = '/renameDataSource',
@@ -32,17 +32,31 @@ export const signUp = (params) => httpUtils.post( Api.signUp,params);
 export const generate = (params) => httpUtils.download( Api.generate,params);
 
 export enum TempRepApi{
-    getTempFileList = '/getTempFileList',
-    uploadTempFile = '/uploadTempFile',
-    getFolderTree = '/getFolderTree',
-    editFolderName = '/editFolderName',
-    deleteFolder = '/deleteFolder'
+    uploadTempFile = '/tempFile/uploadTempFile',
+    addFolder = '/folder/addFolder',
+    editFolderName = '/folder/editFolderName',
+    deleteFolder = '/folder/deleteFolder',
+    getAllFolderTree = '/folder/getAllFolderTree',
+    listTempGroup = '/tempGroup/listTempGroup',
+    getTempGroupSetting = '/tempGroup/getTempGroupSetting',
+    showTempFile = '/tempFile/showTempFile',
+    editTempFileContent = '/tempFile/editTempFileContent',
+    addNewTempGroup = '/tempGroup/addNewTempGroup',
+    updateTempGroup = '/tempGroup/updateTempGroup',
+    renameTempGroup = '/tempGroup/renameTempGroup'
 }
 
-export const getTempFileList = (params) => httpUtils.get( TempRepApi.getTempFileList,params);
-export const getFolderTree = (params) => httpUtils.get( TempRepApi.getFolderTree,params);
+export const getAllFolderTree = (params) => httpUtils.get( TempRepApi.getAllFolderTree,params);
+export const listTempGroup = (params) => httpUtils.get( TempRepApi.listTempGroup,params);
+export const getTempGroupSetting = (params) => httpUtils.get( TempRepApi.getTempGroupSetting,params);
+export const showTempFile = (params) => httpUtils.get( TempRepApi.showTempFile,params);
 
 export const uploadTempFile = (params) => httpUtils.post( TempRepApi.uploadTempFile,params);
+export const addFolder = (params) => httpUtils.post( TempRepApi.addFolder,params);
 export const editFolderName = (params) => httpUtils.post( TempRepApi.editFolderName,params);
+export const editTempFileContent = (params) => httpUtils.post( TempRepApi.editTempFileContent,params);
+export const addNewTempGroup = (params) => httpUtils.post( TempRepApi.addNewTempGroup,params);
+export const updateTempGroup = (params) => httpUtils.post( TempRepApi.updateTempGroup,params);
+export const renameTempGroup = (params) => httpUtils.post( TempRepApi.renameTempGroup,params);
 
 export const deleteFolder = (params) => httpUtils.delete( TempRepApi.deleteFolder,params);

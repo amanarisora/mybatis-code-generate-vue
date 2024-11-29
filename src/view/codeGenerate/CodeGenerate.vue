@@ -5,8 +5,7 @@
         <a-space>
           <a-button type="primary" @click="selectAll">全选</a-button>
           <a-button type="primary" @click="()=>{openTempRep = true}">模板库</a-button>
-          <a-button type="primary" @click="()=>{openEditTemp = true}">编辑模板</a-button>
-          <a-button type="primary" @click="">设置模板</a-button>
+          <a-button type="primary" @click="()=>{openSetTemp = true}">设置模板</a-button>
         </a-space>
       </a-col>
       <a-col>
@@ -126,9 +125,6 @@
             </a-form-item>
           </a-col>
           <a-col class="generate-col">
-            <!--                <a-form-item>
-
-                            </a-form-item>-->
           </a-col>
         </a-row>
         <a-row class="bold-text">
@@ -175,8 +171,8 @@
         </a-row>
       </a-form>
     </div>
-    <CodeMirrorModal v-model:open="openEditTemp"/>
     <TempRepositoryModal v-model:open="openTempRep"/>
+    <SetTempModal v-model:open="openSetTemp"/>
   </div>
 </template>
 
@@ -187,10 +183,11 @@ import {onMounted, reactive, ref, watch} from "vue";
 import {generate, getAllDataSource, getAllTableList} from "@/Api";
 import {useGlobalStore} from "@/store/globalStore";
 import {message} from "ant-design-vue";
-import CodeMirrorModal from "@/components/CodeMirrorModal.vue";
+import CodeMirrorModal from "@/view/codeGenerate/CodeMirrorModal.vue";
 import TempRepositoryModal from "@/view/codeGenerate/TempRepositoryModal.vue";
 import {useShowObjStore} from "@/store/showObjStore";
 import {columns} from "@/view/codeGenerate/codeGenerate";
+import SetTempModal from "@/view/codeGenerate/SetTempModal.vue";
 
 const showObjStore = useShowObjStore()
 
@@ -221,8 +218,8 @@ function reloadTable(){
 
 const currentName = ref<string>('')
 const subItems: any = ref([])
-const openEditTemp = ref<boolean>(false);
 const openTempRep = ref<boolean>(false);
+const openSetTemp = ref<boolean>(false);
 
 const generateForm = reactive<generateFormData>({
   model: '',
@@ -347,7 +344,11 @@ async function generateSubmit() {
   param.datasourceName = showObjStore.currentSelectedDatasource
   param.databaseName = showObjStore.currentSelectedDatabase
   param.tableNameList = selectedRowKeys.value
-  generate(param).then(response => {
+  generate(param).then((response:any) => {
+    console.log(response)
+    if (response.status == 200) {
+      message.success("生成成功")
+    }
     /*console.log(response)
     const contentDisposition = response.headers['content-disposition'];
     let filename = 'downloaded_file.zip';

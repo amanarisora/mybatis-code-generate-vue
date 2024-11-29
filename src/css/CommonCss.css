@@ -5,7 +5,8 @@
     border-radius: 20%
 }
 .divider {
-    flex-grow: 1; /* 使线条占据可用空间 */
+    flex-grow: 0; /* 不允许增长 */
+    flex-basis: 200px;
     height: 3px; /* 设置线的高度 */
     background-color: gray;
     margin: 0 10px; /* 设置线与图标之间的间距 */
@@ -83,4 +84,33 @@
     overflow: hidden;
     text-overflow: ellipsis;
 
+}
+
+/*滚动条设置*/
+
+::-webkit-scrollbar {
+    width: 12px; /* 滚动条宽度 */
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(24,24,24,0.5); /* 滚动条轨道背景 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555; /* 滚动条滑块颜色 */
+    border-radius: 3px; /* 滑块圆角 */
+    border: 2px solid transparent; /* 添加透明边框 */
+    background-clip: content-box; /* 使边框可见 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: gray; /* 滑块悬停时颜色 */
+    border-radius: 3px; /* 滑块圆角 */
+    border: 2px solid transparent; /* 添加透明边框 */
+    background-clip: content-box; /* 使边框可见 */
+}
+
+::-webkit-scrollbar-corner {
+    background: rgba(24,24,24,0.5);
 }

@@ -44,6 +44,7 @@ export class FileStack<T> {
         this.items = new Array(this.maxSize)
         this.startIndex = 0
         this.endIndex = 0
+        this.currentSize = 0
     }
 
     public size():number{

@@ -46,3 +46,12 @@ export interface historyObj {
     type:number,
     parentId:string|null
 }
+
+export interface TemplateIds {
+    controllerTempId: string;
+    entityTempId: string;
+    mapperTempId: string;
+    xmlTempId: string;
+    serviceTempId: string;
+    serviceImplTempId: string;
+}

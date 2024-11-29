@@ -3,7 +3,7 @@ import {markRaw} from "vue";
 import Query from "@/view/table/Query.vue";
 import {useShowObjStore} from "@/store/showObjStore";
 import TableData from "@/view/table/TableData.vue";
-import codeGenerate from "@/view/codeGenerate/codeGenerate.vue";
+import codeGenerate from "@/view/codeGenerate/CodeGenerate.vue";
 
 export function openQuery(datasourceName: string, databaseName: string, queryName: string, queryText: string) {
     const showObjStore = useShowObjStore()
