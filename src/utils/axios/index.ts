@@ -90,8 +90,8 @@ class RequestHttp {
     }
 
     // 常用方法封装
-    get<T>(url: string, params?: object): Promise<ResultData<T>> {
-        return this.service.get(url, {params});
+    get<T>(url: string, params?: object, config?:object): Promise<ResultData<T>> {
+        return this.service.get(url, {params,...config});
     }
     post<T>(url: string, params?: object,config?: AxiosRequestConfig): Promise<ResultData<T>> {
         return this.service.post(url, params,config);
@@ -100,7 +100,8 @@ class RequestHttp {
         return this.service.put(url, params,config);
     }
     delete<T>(url: string, params?: object): Promise<ResultData<T>> {
-        return this.service.delete(url, {params});
+        const config = Array.isArray(params) ? { data: params } : { params };
+        return this.service.delete(url, config);
     }
     download<T>(url: string, params?: object): Promise<ResultData<T>> {
         return this.service.post(url, params,{ responseType: 'arraybuffer' ,headers: { 'X-Return-Full-Response': true }});

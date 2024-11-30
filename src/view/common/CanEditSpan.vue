@@ -2,8 +2,10 @@
   <div>
     <span v-if="!props.isEditing" :class="props.spanClass"
           :style="props.spanStyle">{{ props.text }}</span>
-    <a-input ref="editInput" v-else type="text" v-model:value="editTitle" @blur="submit"
+    <a-input ref="editInput" v-else-if="!isTextArea" type="text" v-model:value="editTitle" @blur="submit"
              @keyup.enter="submit"/>
+    <a-textarea ref="editInput" v-else type="text" v-model:value="editTitle" @blur="submit"
+                @keyup.enter="submit"/>
   </div>
 </template>
 
@@ -27,8 +29,10 @@ const props = defineProps({
   spanClass: {
     type: String,
     default: ''
+  },
+  isTextArea:{
+    type: Boolean,
   }
-
 })
 const editTitle:any = ref('')
 const editInput = ref()
